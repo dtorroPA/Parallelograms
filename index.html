@@ -1,0 +1,1358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Parallelogram Run</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Nunito:wght@400;700;900&display=swap">
+<style>
+:root {
+  --parch: #f7ecd0;
+  --parch-2: #efdcb0;
+  --wood: #5b3a1e;
+  --wood-2: #7a5130;
+  --ink: #2b1c10;
+  --gold: #f2c14e;
+  --yes: #1f9d55;
+  --yes-2: #38d27a;
+  --no: #d9622b;
+  --no-2: #f08a4b;
+  --red: #c0392b;
+  --blue: #2463b5;
+  --display: "Luckiest Guy", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #1c3a24; font-family: var(--body); color: var(--ink); }
+canvas#game { position: fixed; inset: 0; display: block; touch-action: none; }
+.hidden { display: none !important; }
+button { font-family: var(--body); cursor: pointer; }
+.seg { text-decoration: overline; text-decoration-thickness: 2px; }
+
+/* HUD */
+#hud { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; pointer-events: none; z-index: 5; }
+#hud .pill { pointer-events: auto; background: rgba(43, 28, 16, .78); color: #fff4d6; border: 2px solid var(--gold); border-radius: 999px; padding: 4px 12px; font-family: var(--display); letter-spacing: .5px; font-size: 18px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+#hud .grp { display: flex; gap: 8px; align-items: center; }
+#hearts { letter-spacing: 2px; }
+.iconbtn { background: rgba(43, 28, 16, .78); color: #fff4d6; border: 2px solid var(--gold); border-radius: 50%; width: 38px; height: 38px; font-size: 17px; pointer-events: auto; display: grid; place-items: center; padding: 0; }
+
+/* Question card */
+#qcard { position: fixed; top: 56px; left: 50%; transform: translateX(-50%); width: min(560px, 94vw); max-height: calc(100vh - 70px); overflow: auto; background: var(--parch); border: 4px solid var(--wood); border-radius: 18px; box-shadow: 0 10px 0 rgba(0,0,0,.25), 0 0 0 3px var(--gold) inset; padding: 10px 14px 12px; z-index: 6; animation: drop .35s ease-out; }
+@keyframes drop { from { transform: translate(-50%, -30px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+.qhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+#qnum { font-family: var(--display); color: var(--wood); font-size: 20px; letter-spacing: 1px; }
+.qprompt { font-size: 15px; line-height: 1.3; }
+#qdiag { display: block; width: 100%; max-width: calc(36vh * 400 / 250); aspect-ratio: 400 / 250; margin: 6px auto 0; border-radius: 10px; border: 2px solid #d6c08f; }
+.scale-note { text-align: center; font-size: 12px; color: #6b4e2e; font-style: italic; margin: 2px 0 6px; }
+#hintText { background: #fff8e3; border: 2px dashed var(--wood-2); border-radius: 10px; padding: 6px 10px; margin-bottom: 6px; font-size: 15px; text-align: center; font-weight: 700; }
+.timer { height: 10px; background: #d9c69a; border-radius: 99px; overflow: hidden; border: 2px solid var(--wood); }
+#timerFill { height: 100%; width: 100%; background: linear-gradient(90deg, #e74c3c, #f2c14e 40%, #2ecc71); transform-origin: left; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.choice { border: 3px solid var(--wood); border-radius: 14px; padding: 8px 6px; font-family: var(--display); font-size: clamp(14px, 3.6vw, 19px); letter-spacing: .5px; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.35); box-shadow: 0 4px 0 var(--wood); transition: transform .08s; }
+.choice small { display: block; font-family: var(--body); font-size: 11px; font-weight: 700; letter-spacing: 0; opacity: .95; text-shadow: none; }
+.choice:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--wood); }
+.choice.yes { background: var(--yes); }
+.choice.no { background: var(--no); }
+.choice.picked { outline: 4px solid var(--gold); outline-offset: 2px; filter: brightness(1.12); }
+.choice.dim { opacity: .55; }
+.linkbtn { background: none; border: none; color: var(--wood-2); text-decoration: underline; font-weight: 700; font-size: 13px; margin-top: 6px; padding: 2px; }
+
+/* Toast */
+#toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(560px, 92vw); background: rgba(20, 70, 40, .94); color: #eafff1; border: 3px solid var(--yes-2); border-radius: 14px; padding: 10px 14px; font-size: 15px; z-index: 7; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+#toast b.big { font-family: var(--display); font-size: 22px; letter-spacing: 1px; display: block; color: #b8ffd2; font-weight: normal; }
+
+/* Overlays */
+.overlay { position: fixed; inset: 0; z-index: 10; display: flex; align-items: flex-start; justify-content: center; overflow-y: auto; padding: 16px; background: rgba(15, 30, 18, .55); }
+.panel { background: var(--parch); border: 5px solid var(--wood); border-radius: 22px; box-shadow: 0 0 0 3px var(--gold) inset, 0 14px 0 rgba(0,0,0,.3); padding: 18px 20px; width: min(760px, 100%); margin: auto; }
+.panel h1, .panel h2, .panel h3 { font-family: var(--display); font-weight: normal; letter-spacing: 1px; color: var(--wood); margin: 0 0 6px; }
+.panel h1 { font-size: clamp(30px, 7vw, 52px); line-height: 1; color: #b5651d; text-shadow: 0 3px 0 var(--wood), 0 0 0 #000; -webkit-text-stroke: 1px var(--wood); }
+.panel h2 { font-size: 28px; }
+.panel h3 { font-size: 20px; margin-top: 12px; }
+.sub { font-weight: 700; color: var(--wood-2); margin: 4px 0 10px; }
+.titlegrid { display: grid; grid-template-columns: 210px 1fr; gap: 16px; align-items: start; }
+#portrait { width: 210px; height: 250px; display: block; }
+.field { margin: 8px 0; }
+.field label.lbl { display: block; font-weight: 900; font-size: 14px; margin-bottom: 4px; }
+input[type=text] { font: inherit; padding: 8px 10px; border-radius: 10px; border: 2px solid var(--wood-2); width: 100%; background: #fffaf0; }
+.seg-ctl { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg-ctl input { position: absolute; opacity: 0; pointer-events: none; }
+.seg-ctl label { border: 2px solid var(--wood-2); border-radius: 10px; padding: 6px 10px; cursor: pointer; background: #fffaf0; font-weight: 700; font-size: 14px; }
+.seg-ctl label small { display: block; font-weight: 400; font-size: 11px; }
+.seg-ctl input:checked + label { background: var(--wood); color: #fff4d6; }
+.seg-ctl input:focus-visible + label { outline: 3px solid var(--gold); }
+.check { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.bigbtn { font-family: var(--display); font-size: 22px; letter-spacing: 1px; padding: 10px 20px; border-radius: 14px; border: 3px solid var(--wood); background: var(--gold); color: var(--wood); box-shadow: 0 5px 0 var(--wood); }
+.bigbtn.alt { background: #fffaf0; font-size: 18px; }
+.bigbtn:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--wood); }
+.howto { background: #fff8e3; border-radius: 12px; padding: 8px 12px; font-size: 14px; border: 2px dashed var(--wood-2); }
+.howto ul { margin: 4px 0; padding-left: 18px; }
+kbd { background: #fff; border: 1px solid #aa8; border-bottom-width: 3px; border-radius: 5px; padding: 0 5px; font-size: 12px; font-family: var(--body); font-weight: 700; }
+
+.guidegrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.gcard { background: #fffaf0; border: 2px solid var(--wood-2); border-radius: 14px; padding: 8px; }
+.gcard canvas { width: 100%; aspect-ratio: 400/250; display: block; border-radius: 8px; border: 1px solid #d6c08f; }
+.gcard .gt { font-weight: 900; margin-top: 6px; font-size: 14px; }
+.gcard .gd { font-size: 13px; line-height: 1.6; }
+.gcard.trap { border-color: var(--no); }
+.tag { display: inline-block; font-size: 11px; font-weight: 900; padding: 1px 8px; border-radius: 99px; color: #fff; }
+.tag.yes { background: var(--yes); } .tag.no { background: var(--no); }
+
+#fbDiag { width: 100%; max-width: 440px; aspect-ratio: 400/250; display: block; margin: 8px auto; border-radius: 10px; border: 2px solid #d6c08f; }
+.fbbox { background: #fff8e3; border-left: 6px solid var(--no); border-radius: 10px; padding: 8px 12px; margin: 8px 0; font-size: 15px; }
+.fbbox.good { border-left-color: var(--yes); }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 10px 0; }
+.stat { background: #fffaf0; border: 2px solid var(--wood-2); border-radius: 12px; padding: 6px; text-align: center; }
+.stat b { display: block; font-family: var(--display); font-size: 26px; color: var(--wood); font-weight: normal; }
+.stat span { font-size: 12px; font-weight: 700; }
+table.brk { width: 100%; border-collapse: collapse; font-size: 14px; background: #fffaf0; border-radius: 10px; overflow: hidden; }
+table.brk th, table.brk td { padding: 5px 8px; border-bottom: 1px solid #e3d3ad; text-align: left; }
+table.brk th { background: var(--parch-2); }
+table.brk td.n { text-align: center; white-space: nowrap; font-weight: 900; }
+.miss { display: grid; grid-template-columns: 200px 1fr; gap: 10px; background: #fffaf0; border: 2px solid var(--wood-2); border-radius: 12px; padding: 8px; margin-top: 8px; font-size: 14px; }
+.miss canvas { width: 200px; aspect-ratio: 400/250; border-radius: 8px; border: 1px solid #d6c08f; }
+
+#touchpad { position: fixed; bottom: 10px; right: 10px; z-index: 5; display: none; gap: 6px; }
+#touchpad button { width: 54px; height: 54px; border-radius: 14px; border: 2px solid var(--gold); background: rgba(43,28,16,.7); color: #fff4d6; font-size: 22px; }
+@media (pointer: coarse) { #touchpad.on { display: flex; } #toast { bottom: 76px; } }
+/* wide screens: dock the card left so the approaching gate stays visible */
+@media (min-width: 1000px) {
+  #qcard { left: 16px; transform: none; width: min(450px, 36vw); animation: slidein .35s ease-out; }
+  #qdiag { max-width: 100%; }
+}
+@keyframes slidein { from { transform: translateX(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (max-width: 620px) {
+  .titlegrid { grid-template-columns: 1fr; }
+  #portrait { margin: 0 auto; width: 160px; height: 190px; }
+  .miss { grid-template-columns: 1fr; }
+  .miss canvas { width: 100%; }
+  #hud { padding: 6px 8px; gap: 4px; }
+  #hud .grp { gap: 4px; }
+  #hud .pill { font-size: 14px; padding: 2px 8px; gap: 4px; }
+  #coinPill { display: none !important; }
+  .iconbtn { width: 32px; height: 32px; font-size: 14px; }
+  #qcard { top: 48px; }
+}
+@media print {
+  body { overflow: visible; background: #fff; }
+  canvas#game, #hud, #touchpad, .btnrow { display: none !important; }
+  .overlay { position: static; background: none; }
+}
+</style>
+</head>
+<body>
+<canvas id="game" aria-label="Endless runner scene"></canvas>
+
+<div id="hud" class="hidden">
+  <div class="grp">
+    <div class="pill" id="hearts" title="Lives">❤️❤️❤️</div>
+    <div class="pill" id="gateNum">GATE 1/16</div>
+  </div>
+  <div class="grp">
+    <div class="pill" id="coinPill">🪙 <span id="coinCt">0</span></div>
+    <div class="pill">⭐ <span id="scoreCt">0</span></div>
+    <button class="iconbtn" id="muteBtn" title="Sound (M)" aria-label="Toggle sound">🔊</button>
+    <button class="iconbtn" id="pauseBtn" title="Pause (P)" aria-label="Pause">⏸</button>
+  </div>
+</div>
+
+<div id="qcard" class="hidden" role="dialog" aria-label="Gate question">
+  <div class="qhead">
+    <span id="qnum">GATE 1</span>
+    <span class="qprompt">Is the marked information <b>enough to prove</b> that <b>ABCD is a parallelogram</b>?</span>
+  </div>
+  <canvas id="qdiag" width="400" height="250"></canvas>
+  <div class="scale-note">Diagrams are not drawn to scale. Trust the marks, not the picture!</div>
+  <div id="hintText" class="hidden"></div>
+  <div class="timer"><div id="timerFill"></div></div>
+  <div class="choices">
+    <button class="choice yes" id="btnYes">◀ PARALLELOGRAM!<small>Left arch · ← or Y</small></button>
+    <button class="choice no" id="btnNo">NOT ENOUGH INFO ▶<small>Right arch · → or N</small></button>
+  </div>
+  <div style="text-align:center"><button class="linkbtn" id="hintBtn">💡 Read the givens in words (H) · half points</button></div>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<div id="touchpad">
+  <button id="tpJump" aria-label="Jump">▲</button>
+  <button id="tpSlide" aria-label="Slide">▼</button>
+</div>
+
+<!-- Title -->
+<div class="overlay" id="titleScr">
+  <div class="panel">
+    <h1>Parallelogram Run</h1>
+    <div class="sub">Escape the Temple of Euclid! The Not‑a‑grams are right behind you…</div>
+    <div class="titlegrid">
+      <canvas id="portrait" width="210" height="250" aria-label="Professor Protractor, the geometry teacher"></canvas>
+      <div>
+        <div class="howto">
+          <b>You are Professor Protractor.</b> Run through the temple ruins. At every stone gate you'll see a quadrilateral <b>ABCD</b> with marks on it. Decide:
+          <ul>
+            <li><b style="color:var(--yes)">LEFT arch: PARALLELOGRAM!</b> The marks are enough to <i>prove</i> it.</li>
+            <li><b style="color:var(--no)">RIGHT arch: NOT ENOUGH INFO.</b> It <i>might</i> be one, but it isn't proven.</li>
+          </ul>
+          <kbd>←</kbd>/<kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> pick an arch (or switch lanes) · <kbd>↑</kbd>/<kbd>Space</kbd> jump · <kbd>↓</kbd> slide · <kbd>P</kbd> pause. On a phone or tablet, swipe or tap the buttons. Wrong arches cost a ❤️. Lose all 3 and the Not‑a‑grams catch you!
+        </div>
+        <div class="field"><label class="lbl" for="nameIn">Runner name (shown on your results)</label><input type="text" id="nameIn" maxlength="30" placeholder="First & last name" autocomplete="off"></div>
+        <div class="field"><span class="lbl" style="font-weight:900;font-size:14px">Pace</span>
+          <div class="seg-ctl" role="radiogroup" aria-label="Pace">
+            <input type="radio" name="diff" id="d-study" value="study"><label for="d-study">🐢 Study<small>slow, no obstacles</small></label>
+            <input type="radio" name="diff" id="d-run" value="run" checked><label for="d-run">🏃 Run<small>normal</small></label>
+            <input type="radio" name="diff" id="d-sprint" value="sprint"><label for="d-sprint">⚡ Sprint<small>fast decisions</small></label>
+          </div>
+        </div>
+        <div class="field"><span class="lbl" style="font-weight:900;font-size:14px">Number of gates</span>
+          <div class="seg-ctl" role="radiogroup" aria-label="Number of gates">
+            <input type="radio" name="len" id="l-10" value="10"><label for="l-10">10</label>
+            <input type="radio" name="len" id="l-16" value="16" checked><label for="l-16">16</label>
+            <input type="radio" name="len" id="l-24" value="24"><label for="l-24">24</label>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="practiceIn"> Practice mode: unlimited lives</label>
+        <div class="btnrow">
+          <button class="bigbtn" id="startBtn">▶ Start Running</button>
+          <button class="bigbtn alt" id="guideBtn">📜 Theorem Guide</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Guide -->
+<div class="overlay hidden" id="guideScr">
+  <div class="panel">
+    <h2>📜 The Six Ways to Prove a Parallelogram</h2>
+    <p style="margin:0 0 8px">A quadrilateral is a parallelogram if <b>any one</b> of these is true:</p>
+    <div class="guidegrid" id="guideYes"></div>
+    <h3>⚠️ Traps: not enough on their own</h3>
+    <div class="guidegrid" id="guideNo"></div>
+    <div class="btnrow"><button class="bigbtn" id="guideClose">◀ Back</button></div>
+  </div>
+</div>
+
+<!-- Wrong-answer feedback -->
+<div class="overlay hidden" id="fbScr">
+  <div class="panel" style="width:min(600px,100%)">
+    <h2 id="fbTitle">Not quite!</h2>
+    <div id="fbAnswer" style="font-weight:700"></div>
+    <canvas id="fbDiag" width="400" height="250"></canvas>
+    <div class="fbbox" id="fbWhy"></div>
+    <div style="font-size:14px"><b>Given:</b> <span id="fbGiven"></span></div>
+    <div class="btnrow"><button class="bigbtn" id="fbBtn">Keep Running ▶</button></div>
+  </div>
+</div>
+
+<!-- Pause -->
+<div class="overlay hidden" id="pauseScr">
+  <div class="panel" style="width:min(420px,100%);text-align:center">
+    <h2>Paused</h2>
+    <p>Catch your breath, Professor.</p>
+    <div class="btnrow" style="justify-content:center">
+      <button class="bigbtn" id="resumeBtn">▶ Resume</button>
+      <button class="bigbtn alt" id="quitBtn">Quit to Menu</button>
+    </div>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="overlay hidden" id="resScr">
+  <div class="panel">
+    <h2 id="resTitle">You escaped!</h2>
+    <div id="resSub" class="sub"></div>
+    <div class="stats" id="resStats"></div>
+    <h3>How you did on each idea</h3>
+    <table class="brk"><thead><tr><th>Information given</th><th>Answer</th><th>Score</th></tr></thead><tbody id="resTable"></tbody></table>
+    <h3 id="missHead">Review your missed gates</h3>
+    <div id="missList"></div>
+    <div class="btnrow">
+      <button class="bigbtn" id="againBtn">↻ Run Again</button>
+      <button class="bigbtn alt" id="menuBtn">Main Menu</button>
+      <button class="bigbtn alt" id="printBtn">🖨 Print / Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================
+   Utilities
+   ========================================================= */
+const $ = id => document.getElementById(id);
+const rand = (a, b) => a + Math.random() * (b - a);
+const ri = (a, b) => Math.floor(rand(a, b + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const chance = p => Math.random() < p;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const D2R = Math.PI / 180;
+const LBL = 'ABCD';
+const fmt = s => s.replace(/\[([A-Z]{2})\]/g, '<span class="seg">$1</span>');
+const plain = s => s.replace(/\[([A-Z]{2})\]/g, '$1').replace(/<[^>]+>/g, '');
+const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+/* =========================================================
+   Shapes (math coords, y up). Vertex order A, B, C, D:
+   A top-left, B top-right, C bottom-right, D bottom-left.
+   ========================================================= */
+// D = (0,0), C = (w,0); interior angle at D is aD, at C is bC; height h.
+function trapPts(aD, bC, w, h) {
+  return [[h / Math.tan(aD * D2R), h], [w - h / Math.tan(bC * D2R), h], [w, 0], [0, 0]];
+}
+function paraShape() { const a = pick([55, 60, 65, 70, 75, 105, 110, 115, 120, 125]); return { pts: trapPts(a, 180 - a, ri(170, 210), ri(95, 125)), rot: rand(-.18, .18) }; }
+function rectShape() { return { pts: trapPts(90, 90, ri(190, 230), ri(100, 130)), rot: rand(-.15, .15) }; }
+function rhombusShape() { const a = pick([55, 60, 65, 115, 120, 125]), s = ri(140, 170); return { pts: trapPts(a, 180 - a, s, s * Math.sin(a * D2R)), rot: rand(-.15, .15) }; }
+function isoTrapShape() { const a = pick([55, 60, 65, 70]); return { pts: trapPts(a, a, ri(215, 245), ri(95, 115)), rot: rand(-.12, .12) }; }
+function trapShape() { const a = pick([60, 65, 70, 80, 95, 100]); let b = pick([50, 55, 60, 75]); if (a === b) b += 10; return { pts: trapPts(a, b, ri(215, 245), ri(95, 115)), rot: rand(-.12, .12) }; }
+function kiteShape() { const a = ri(40, 58), c = ri(100, 130), k = ri(62, 82); return { pts: [[0, a], [k, 0], [0, -c], [-k, 0]], rot: rand(-.2, .2) }; }
+function generalShape() {
+  for (let tries = 0; tries < 50; tries++) {
+    const base = trapPts(70, 110, 200, 115);
+    const pts = base.map(([x, y]) => [x + rand(-32, 32), y + rand(-22, 22)]);
+    let sgn = 0, ok = true;
+    for (let i = 0; i < 4; i++) {
+      const p = pts[i], q = pts[(i + 1) % 4], r = pts[(i + 2) % 4];
+      const cr = (q[0] - p[0]) * (r[1] - q[1]) - (q[1] - p[1]) * (r[0] - q[0]);
+      if (sgn === 0) sgn = Math.sign(cr); else if (Math.sign(cr) !== sgn) ok = false;
+    }
+    // reject anything that accidentally looks like a parallelogram
+    const dx1 = (pts[1][0] - pts[0][0]) - (pts[2][0] - pts[3][0]), dy1 = (pts[1][1] - pts[0][1]) - (pts[2][1] - pts[3][1]);
+    if (ok && Math.hypot(dx1, dy1) > 25) return { pts, rot: rand(-.1, .1) };
+  }
+  return trapShape();
+}
+function interior(pts, i) {
+  const v = pts[i], p = pts[(i + 3) % 4], n = pts[(i + 1) % 4];
+  const a = [p[0] - v[0], p[1] - v[1]], b = [n[0] - v[0], n[1] - v[1]];
+  return Math.round(Math.acos((a[0] * b[0] + a[1] * b[1]) / (Math.hypot(...a) * Math.hypot(...b))) / D2R);
+}
+
+/* Marks */
+const par = (a, b, n) => ({ t: 'par', a, b, n });
+const tk = (a, b, n) => ({ t: 'tick', a, b, n });
+const arcM = (v, n) => ({ t: 'arc', v, n });
+const angM = v => ({ t: 'ang', v });
+const rt = v => ({ t: 'right', v });
+const len = (a, b, txt) => ({ t: 'len', a, b, txt: String(txt) });
+const DIAG = { t: 'diag' };
+const dtk = (v, n) => ({ t: 'dtick', v, n });
+const dl = (v, txt) => ({ t: 'dlen', v, txt: String(txt) });
+const PERP = { t: 'perp' };
+const legend = txt => ({ t: 'legend', txt });
+
+/* =========================================================
+   Question templates
+   ========================================================= */
+const TEMPLATES = [
+  // ---------- SUFFICIENT ----------
+  { id: 'y-par', ok: true, cat: 'Both pairs of opposite sides parallel', make() {
+    return { sh: paraShape(), marks: [par(0, 1, 1), par(3, 2, 1), par(0, 3, 2), par(1, 2, 2)],
+      given: '[AB] ∥ [DC] and [AD] ∥ [BC]',
+      short: 'Both pairs of opposite sides are parallel.',
+      why: 'Both pairs of opposite sides are marked parallel: single arrows on [AB] & [DC], double arrows on [AD] & [BC]. That is the <b>definition</b> of a parallelogram.' }; } },
+  { id: 'y-cong', ok: true, cat: 'Both pairs of opposite sides congruent', make(v) {
+    v = v ?? ri(0, 2);
+    if (v === 1) { const p = ri(9, 16), q = ri(4, p - 3);
+      return { sh: paraShape(), marks: [len(0, 1, p), len(3, 2, p), len(0, 3, q), len(1, 2, q)],
+        given: `AB = DC = ${p} and AD = BC = ${q}`, short: 'Both pairs of opposite sides are congruent.',
+        why: `AB = DC = ${p} and AD = BC = ${q}, so <b>both pairs of opposite sides are congruent</b>. That proves a parallelogram.` }; }
+    if (v === 2) return { sh: rhombusShape(), marks: [tk(0, 1, 1), tk(1, 2, 1), tk(2, 3, 1), tk(3, 0, 1)],
+      given: 'All four sides are congruent', short: 'All four sides congruent means both pairs of opposite sides are congruent.',
+      why: 'All four sides are congruent, so <b>both pairs of opposite sides are congruent</b>. It is a parallelogram (a rhombus, in fact!).' };
+    return { sh: paraShape(), marks: [tk(0, 1, 1), tk(3, 2, 1), tk(0, 3, 2), tk(1, 2, 2)],
+      given: '[AB] ≅ [DC] and [AD] ≅ [BC]', short: 'Both pairs of opposite sides are congruent.',
+      why: 'The tick marks show [AB] ≅ [DC] (one tick) and [AD] ≅ [BC] (two ticks). <b>Both pairs of opposite sides are congruent</b>, so it is a parallelogram.' }; } },
+  { id: 'y-ang', ok: true, cat: 'Both pairs of opposite angles congruent', make(v) {
+    v = v ?? ri(0, 2);
+    if (v === 1) { const sh = paraShape(); const a = [0, 1, 2, 3].map(i => interior(sh.pts, i));
+      return { sh, marks: [angM(0), angM(1), angM(2), angM(3)],
+        given: `m∠A = ${a[0]}°, m∠B = ${a[1]}°, m∠C = ${a[2]}°, m∠D = ${a[3]}°`, short: 'Both pairs of opposite angles are congruent.',
+        why: `∠A and ∠C are both ${a[0]}°, and ∠B and ∠D are both ${a[1]}°. <b>Both pairs of opposite angles are congruent</b>, so it is a parallelogram.` }; }
+    if (v === 2) return { sh: rectShape(), marks: [rt(0), rt(1), rt(2), rt(3)],
+      given: 'All four angles are right angles', short: 'Four right angles means both pairs of opposite angles are congruent.',
+      why: 'All four angles are 90°, so <b>both pairs of opposite angles are congruent</b>. It is a parallelogram (a rectangle!).' };
+    return { sh: paraShape(), marks: [arcM(0, 1), arcM(2, 1), arcM(1, 2), arcM(3, 2)],
+      given: '∠A ≅ ∠C and ∠B ≅ ∠D', short: 'Both pairs of opposite angles are congruent.',
+      why: 'The arcs show ∠A ≅ ∠C (one arc) and ∠B ≅ ∠D (two arcs). <b>Both pairs of opposite angles are congruent</b>, so it is a parallelogram.' }; } },
+  { id: 'y-supp', ok: true, cat: 'One angle supplementary to both consecutive angles', make() {
+    const sh = paraShape(); const h = ri(0, 3), p = (h + 3) % 4, n = (h + 1) % 4;
+    const x = interior(sh.pts, h), y = interior(sh.pts, p);
+    const H = LBL[h], P = LBL[p], N = LBL[n];
+    return { sh, marks: [angM(h), angM(p), angM(n)],
+      given: `m∠${H} = ${x}°, m∠${P} = ${y}°, m∠${N} = ${y}°`, short: `∠${H} is supplementary to both of its consecutive angles.`,
+      why: `${x}° + ${y}° = 180°, so ∠${H} is supplementary to <b>both</b> consecutive angles, ∠${P} and ∠${N}. Same‑side interior angles are supplementary, so both pairs of opposite sides are parallel. Parallelogram!` }; } },
+  { id: 'y-diag', ok: true, cat: 'Diagonals bisect each other', make(v) {
+    v = v ?? ri(0, 1);
+    if (v === 1) { const a = ri(5, 12); let b = ri(3, 10); if (b === a) b++;
+      return { sh: paraShape(), marks: [DIAG, dl(0, a), dl(2, a), dl(1, b), dl(3, b)],
+        given: `AE = EC = ${a} and BE = ED = ${b}`, short: 'The diagonals bisect each other.',
+        why: `AE = EC = ${a} and BE = ED = ${b}, so E is the midpoint of <b>both</b> diagonals. The diagonals bisect each other, so it is a parallelogram.` }; }
+    return { sh: paraShape(), marks: [DIAG, dtk(0, 1), dtk(2, 1), dtk(1, 2), dtk(3, 2)],
+      given: '[AE] ≅ [EC] and [BE] ≅ [ED]', short: 'The diagonals bisect each other.',
+      why: '[AE] ≅ [EC] and [BE] ≅ [ED], so E is the midpoint of <b>both</b> diagonals. The diagonals bisect each other, so it is a parallelogram.' }; } },
+  { id: 'y-one', ok: true, cat: 'One pair of opposite sides both congruent and parallel', make(v) {
+    v = v ?? ri(0, 1);
+    const pr = chance(.5) ? [[0, 1], [3, 2]] : [[0, 3], [1, 2]];
+    const s1 = LBL[pr[0][0]] + LBL[pr[0][1]], s2 = LBL[pr[1][0]] + LBL[pr[1][1]];
+    if (v === 1) { const n = ri(6, 15);
+      return { sh: paraShape(), marks: [par(...pr[0], 1), par(...pr[1], 1), len(...pr[0], n), len(...pr[1], n)],
+        given: `[${s1}] ∥ [${s2}] and ${s1} = ${s2} = ${n}`, short: 'One pair of opposite sides is both congruent and parallel.',
+        why: `The <b>same pair</b> of opposite sides, [${s1}] and [${s2}], is both parallel (arrows) and congruent (both ${n}). That is enough to prove a parallelogram.` }; }
+    return { sh: paraShape(), marks: [par(...pr[0], 1), par(...pr[1], 1), tk(...pr[0], 1), tk(...pr[1], 1)],
+      given: `[${s1}] ∥ [${s2}] and [${s1}] ≅ [${s2}]`, short: 'One pair of opposite sides is both congruent and parallel.',
+      why: `The <b>same pair</b> of opposite sides, [${s1}] and [${s2}], has both arrows (parallel) and ticks (congruent). That is enough to prove a parallelogram.` }; } },
+
+  // ---------- NOT ENOUGH ----------
+  { id: 'n-onepar', ok: false, cat: 'Only one pair of opposite sides parallel', make() {
+    return { sh: chance(.5) ? trapShape() : paraShape(), marks: [par(0, 1, 1), par(3, 2, 1)],
+      given: '[AB] ∥ [DC]', short: 'Only one pair of sides is parallel. It could be a trapezoid.',
+      why: 'Only <b>one</b> pair of opposite sides is marked parallel. A <b>trapezoid</b> also has exactly that, so it is not proven. You need both pairs parallel (or that same pair also congruent).' }; } },
+  { id: 'n-isotrap', ok: false, cat: 'One pair parallel, the OTHER pair congruent', make(v) {
+    v = v ?? ri(0, 1); const sh = chance(.55) ? isoTrapShape() : paraShape();
+    if (v === 1) { const n = ri(5, 12);
+      return { sh, marks: [par(0, 1, 1), par(3, 2, 1), len(0, 3, n), len(1, 2, n)],
+        given: `[AB] ∥ [DC] and AD = BC = ${n}`, short: 'The parallel pair and the congruent pair are different. It could be an isosceles trapezoid.',
+        why: `[AB] ∥ [DC], but the congruent sides are [AD] and [BC], a <b>different pair</b>. An <b>isosceles trapezoid</b> fits these marks exactly. The parallel pair and the congruent pair must be the <b>same</b> pair.` }; }
+    return { sh, marks: [par(0, 1, 1), par(3, 2, 1), tk(0, 3, 1), tk(1, 2, 1)],
+      given: '[AB] ∥ [DC] and [AD] ≅ [BC]', short: 'The parallel pair and the congruent pair are different. It could be an isosceles trapezoid.',
+      why: 'The arrows are on [AB] & [DC], but the ticks are on [AD] & [BC], a <b>different pair</b>. An <b>isosceles trapezoid</b> fits these marks exactly. For this test the parallel pair and the congruent pair must be the <b>same</b> pair.' }; } },
+  { id: 'n-onecong', ok: false, cat: 'Only one pair of opposite sides congruent', make() {
+    return { sh: chance(.5) ? isoTrapShape() : paraShape(), marks: [tk(0, 3, 1), tk(1, 2, 1)],
+      given: '[AD] ≅ [BC]', short: 'Only one pair of opposite sides is congruent. It could be an isosceles trapezoid.',
+      why: 'Only <b>one</b> pair of opposite sides is marked congruent. An <b>isosceles trapezoid</b> has that too. You need <b>both</b> pairs congruent.' }; } },
+  { id: 'n-kite', ok: false, cat: 'Two pairs of CONSECUTIVE sides congruent', make(v) {
+    v = v ?? ri(0, 1);
+    if (v === 1) { const a = ri(4, 8), b = ri(a + 3, 15);
+      return { sh: kiteShape(), marks: [len(0, 1, a), len(0, 3, a), len(1, 2, b), len(3, 2, b)],
+        given: `AB = AD = ${a} and CB = CD = ${b}`, short: 'The congruent sides are consecutive, not opposite. It\'s a kite.',
+        why: `The equal sides (AB = AD and CB = CD) are <b>consecutive</b>: they share a vertex. They are not opposite sides. This is a <b>kite</b>, not a parallelogram.` }; }
+    return { sh: kiteShape(), marks: [tk(0, 1, 1), tk(0, 3, 1), tk(1, 2, 2), tk(3, 2, 2)],
+      given: '[AB] ≅ [AD] and [CB] ≅ [CD]', short: 'The congruent sides are consecutive, not opposite. It\'s a kite.',
+      why: 'The matching ticks are on <b>consecutive</b> sides ([AB] & [AD], [CB] & [CD]), which share a vertex. Opposite sides are not marked congruent. This is a <b>kite</b>.' }; } },
+  { id: 'n-oneang', ok: false, cat: 'Only one pair of opposite angles congruent', make() {
+    return { sh: chance(.6) ? kiteShape() : paraShape(), marks: [arcM(1, 1), arcM(3, 1)],
+      given: '∠B ≅ ∠D', short: 'Only one pair of opposite angles is congruent. It could be a kite.',
+      why: 'Only <b>one</b> pair of opposite angles (∠B and ∠D) is marked congruent. A <b>kite</b> has one pair of congruent opposite angles too. You need <b>both</b> pairs.' }; } },
+  { id: 'n-consang', ok: false, cat: 'CONSECUTIVE angles congruent', make() {
+    return { sh: isoTrapShape(), marks: [arcM(0, 1), arcM(1, 1), arcM(3, 2), arcM(2, 2)],
+      given: '∠A ≅ ∠B and ∠D ≅ ∠C', short: 'Those congruent angles are consecutive, not opposite. It could be an isosceles trapezoid.',
+      why: 'The matching arcs are on <b>consecutive</b> angles (∠A & ∠B, ∠D & ∠C), not opposite angles. An <b>isosceles trapezoid</b> has two pairs of congruent base angles like this.' }; } },
+  { id: 'n-supp1', ok: false, cat: 'Angle supplementary to only ONE consecutive angle', make() {
+    const sh = trapShape(); const side = chance(.5) ? [0, 3] : [1, 2];
+    const a = interior(sh.pts, side[0]), b = interior(sh.pts, side[1]);
+    const X = LBL[side[0]], Y = LBL[side[1]];
+    return { sh, marks: [angM(side[0]), angM(side[1])],
+      given: `m∠${X} = ${a}°, m∠${Y} = ${b}°`, short: `∠${X} is supplementary to only one consecutive angle. It could be a trapezoid.`,
+      why: `${a}° + ${b}° = 180°, so ∠${X} is supplementary to ∠${Y}. But that only proves <b>one</b> pair of sides is parallel ([AB] ∥ [DC]). The angle must be supplementary to <b>both</b> consecutive angles. This could be a <b>trapezoid</b>.` }; } },
+  { id: 'n-supp4', ok: false, cat: 'Four angles, but no angle supplementary to BOTH neighbors', make() {
+    const sh = trapShape(); const a = [0, 1, 2, 3].map(i => interior(sh.pts, i));
+    return { sh, marks: [angM(0), angM(1), angM(2), angM(3)],
+      given: `m∠A = ${a[0]}°, m∠B = ${a[1]}°, m∠C = ${a[2]}°, m∠D = ${a[3]}°`, short: 'Opposite angles are not congruent. It\'s a trapezoid.',
+      why: `∠A + ∠D = 180°, but ∠A + ∠B = ${a[0] + a[1]}°. No angle is supplementary to <b>both</b> of its neighbors, and the opposite angles (${a[0]}° vs ${a[2]}°) are not congruent. This is a <b>trapezoid</b>.` }; } },
+  { id: 'n-onediag', ok: false, cat: 'Only ONE diagonal bisected', make() {
+    return { sh: chance(.6) ? kiteShape() : paraShape(), marks: [DIAG, dtk(1, 1), dtk(3, 1)],
+      given: '[BE] ≅ [ED]', short: 'Only one diagonal is bisected. It could be a kite.',
+      why: 'Only [BD] is marked as bisected (BE = ED). Nothing says AE = EC. The diagonals must bisect <b>each other</b>. In a <b>kite</b>, one diagonal bisects the other, but not the other way around.' }; } },
+  { id: 'n-diagnum', ok: false, cat: 'Only ONE diagonal bisected', make() {
+    const b = ri(4, 9), a1 = ri(3, 6), a2 = ri(a1 + 3, 13);
+    return { sh: kiteShape(), marks: [DIAG, dl(1, b), dl(3, b), dl(0, a1), dl(2, a2)],
+      given: `BE = ED = ${b}, AE = ${a1}, EC = ${a2}`, short: 'AE ≠ EC, so the diagonals don\'t bisect each other.',
+      why: `BE = ED = ${b}, so E is the midpoint of [BD]. But AE = ${a1} and EC = ${a2}, so [AC] is <b>not</b> bisected. The diagonals do not bisect <b>each other</b>. It looks like a <b>kite</b>.` }; } },
+  { id: 'n-diagcong', ok: false, cat: 'Diagonals congruent (only)', make() {
+    const n = ri(8, 16);
+    return { sh: isoTrapShape(), marks: [DIAG, legend(`AC = ${n},  BD = ${n}`)],
+      given: `AC = BD = ${n}`, short: 'Congruent diagonals alone aren\'t enough. Isosceles trapezoids have them too.',
+      why: 'The diagonals are <b>congruent</b>, but nothing says they <b>bisect each other</b>. An <b>isosceles trapezoid</b> has congruent diagonals and is not a parallelogram.' }; } },
+  { id: 'n-perp', ok: false, cat: 'Diagonals perpendicular (only)', make() {
+    return { sh: kiteShape(), marks: [DIAG, PERP],
+      given: '[AC] ⊥ [BD]', short: 'Perpendicular diagonals alone aren\'t enough. Kites have them too.',
+      why: 'The diagonals are <b>perpendicular</b>, but that says nothing about bisecting or parallel sides. A <b>kite</b> has perpendicular diagonals and is not a parallelogram.' }; } },
+  { id: 'n-mismatch', ok: false, cat: 'Mismatched marks: only one pair congruent', make(v) {
+    v = v ?? ri(0, 1);
+    if (v === 1) { const p = ri(7, 14), q = ri(4, 9); let r = q + pick([-2, -1, 1, 2, 3]);
+      return { sh: generalShape(), marks: [len(0, 1, p), len(3, 2, p), len(0, 3, q), len(1, 2, r)],
+        given: `AB = DC = ${p}, AD = ${q}, BC = ${r}`, short: 'AD ≠ BC, so only one pair of opposite sides is congruent.',
+        why: `AB = DC = ${p}, but AD = ${q} and BC = ${r}. Only <b>one</b> pair of opposite sides is congruent. (And it never says that pair is parallel.)` }; }
+    return { sh: generalShape(), marks: [tk(0, 1, 1), tk(3, 2, 1), tk(0, 3, 2), tk(1, 2, 3)],
+      given: '[AB] ≅ [DC]. [AD] has 2 ticks but [BC] has 3 ticks', short: 'Read the marks carefully! 2 ticks ≠ 3 ticks.',
+      why: 'Matching marks mean congruent. [AB] and [DC] match (1 tick each), but [AD] has <b>2</b> ticks and [BC] has <b>3</b>, so they are <b>not</b> marked congruent. Only one pair of opposite sides is congruent.' }; } },
+];
+const YES_T = TEMPLATES.filter(t => t.ok), NO_T = TEMPLATES.filter(t => !t.ok);
+
+function buildQuestions(n) {
+  const nYes = Math.ceil(n / 2), nNo = n - nYes;
+  const take = (pool, k) => { const out = []; let bag = []; while (out.length < k) { if (!bag.length) bag = shuffle(pool.slice()); out.push(bag.pop()); } return out; };
+  const list = shuffle([...take(YES_T, nYes), ...take(NO_T, nNo)]);
+  // avoid the same template twice in a row
+  for (let i = 1; i < list.length; i++) if (list[i] === list[i - 1]) { const j = (i + 2) % list.length; [list[i], list[j]] = [list[j], list[i]]; }
+  return list.map(t => Object.assign({ tpl: t, ok: t.ok, cat: t.cat, id: t.id }, t.make()));
+}
+
+/* =========================================================
+   Diagram renderer
+   ========================================================= */
+const MARKCOL = { 1: '#d1342f', 2: '#1f5fbf', 3: '#178a4c' };
+function drawDiagram(cvs, q, W = 400, H = 250) {
+  const dpr = Math.min(3, (window.devicePixelRatio || 1) * 1.5);
+  cvs.width = W * dpr; cvs.height = H * dpr;
+  const c = cvs.getContext('2d');
+  c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  // graph-paper background
+  c.fillStyle = '#fffdf5'; c.fillRect(0, 0, W, H);
+  c.strokeStyle = '#e6edf7'; c.lineWidth = 1;
+  for (let x = 0; x <= W; x += 20) { c.beginPath(); c.moveTo(x + .5, 0); c.lineTo(x + .5, H); c.stroke(); }
+  for (let y = 0; y <= H; y += 20) { c.beginPath(); c.moveTo(0, y + .5); c.lineTo(W, y + .5); c.stroke(); }
+
+  const hasLegend = q.marks.some(m => m.t === 'legend');
+  const bh = H - (hasLegend ? 26 : 0);
+  // rotate, flip, fit
+  const cs = Math.cos(q.sh.rot), sn = Math.sin(q.sh.rot);
+  let P = q.sh.pts.map(([x, y]) => [x * cs - y * sn, -(x * sn + y * cs)]);
+  const xs = P.map(p => p[0]), ys = P.map(p => p[1]);
+  const mnx = Math.min(...xs), mny = Math.min(...ys), bw = Math.max(...xs) - mnx, bhh = Math.max(...ys) - mny;
+  const pad = 44, sc = Math.min((W - 2 * pad) / bw, (bh - 2 * pad) / bhh);
+  P = P.map(([x, y]) => [(x - mnx) * sc + (W - bw * sc) / 2, (y - mny) * sc + (bh - bhh * sc) / 2]);
+  const G = [P.reduce((s, p) => s + p[0], 0) / 4, P.reduce((s, p) => s + p[1], 0) / 4];
+  // diagonal intersection
+  const E = (() => { const [a, b, cc, d] = P; const r = [cc[0] - a[0], cc[1] - a[1]], s = [d[0] - b[0], d[1] - b[1]];
+    const den = r[0] * s[1] - r[1] * s[0]; const t = ((b[0] - a[0]) * s[1] - (b[1] - a[1]) * s[0]) / den; return [a[0] + t * r[0], a[1] + t * r[1]]; })();
+  const unit = v => { const l = Math.hypot(v[0], v[1]) || 1; return [v[0] / l, v[1] / l]; };
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1]];
+  const line = (x1, y1, x2, y2) => { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); };
+  const sideKey = (a, b) => Math.min(a, b) + '-' + Math.max(a, b);
+  const tickSides = new Set(q.marks.filter(m => m.t === 'tick').map(m => sideKey(m.a, m.b)));
+  const parSides = new Set(q.marks.filter(m => m.t === 'par').map(m => sideKey(m.a, m.b)));
+
+  const showDiag = q.marks.some(m => m.t === 'diag');
+  if (showDiag) {
+    c.strokeStyle = '#4a4a5a'; c.lineWidth = 1.6;
+    line(...P[0], ...P[2]); line(...P[1], ...P[3]);
+  }
+  // shape
+  c.strokeStyle = '#1d2238'; c.lineWidth = 2.8; c.lineJoin = 'round';
+  c.fillStyle = 'rgba(242,193,78,.13)';
+  c.beginPath(); P.forEach((p, i) => i ? c.lineTo(...p) : c.moveTo(...p)); c.closePath(); c.fill(); c.stroke();
+
+  const drawTicks = (p, q2, n, col, t = .5) => {
+    const d = unit(sub(q2, p)), nr = [-d[1], d[0]];
+    const m = [p[0] + (q2[0] - p[0]) * t, p[1] + (q2[1] - p[1]) * t];
+    c.strokeStyle = col; c.lineWidth = 2.6; c.lineCap = 'round';
+    for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 6; const x = m[0] + d[0] * o, y = m[1] + d[1] * o; line(x - nr[0] * 8, y - nr[1] * 8, x + nr[0] * 8, y + nr[1] * 8); }
+  };
+  const textOut = (txt, x, y, size = 15, col = '#1d2238', bold = true) => {
+    c.font = `${bold ? '800 ' : ''}${size}px Nunito, system-ui, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.lineWidth = 4; c.strokeStyle = '#fffdf5'; c.strokeText(txt, x, y); c.fillStyle = col; c.fillText(txt, x, y);
+  };
+
+  for (const m of q.marks) {
+    if (m.t === 'tick') {
+      const t = parSides.has(sideKey(m.a, m.b)) ? .64 : .5;
+      drawTicks(P[m.a], P[m.b], m.n, MARKCOL[m.n], t);
+    } else if (m.t === 'par') {
+      const p = P[m.a], q2 = P[m.b]; const d = unit(sub(q2, p)), nr = [-d[1], d[0]];
+      const t = tickSides.has(sideKey(m.a, m.b)) ? .36 : .5;
+      const mm = [p[0] + (q2[0] - p[0]) * t, p[1] + (q2[1] - p[1]) * t];
+      c.strokeStyle = MARKCOL[m.n]; c.lineWidth = 2.6; c.lineCap = 'round'; c.lineJoin = 'round';
+      for (let i = 0; i < m.n; i++) { const o = (i - (m.n - 1) / 2) * 8 + 4; const tip = [mm[0] + d[0] * o, mm[1] + d[1] * o];
+        c.beginPath(); c.moveTo(tip[0] - d[0] * 9 + nr[0] * 6.5, tip[1] - d[1] * 9 + nr[1] * 6.5); c.lineTo(...tip); c.lineTo(tip[0] - d[0] * 9 - nr[0] * 6.5, tip[1] - d[1] * 9 - nr[1] * 6.5); c.stroke(); }
+    } else if (m.t === 'arc' || m.t === 'right' || m.t === 'ang') {
+      const V = P[m.v], u1 = unit(sub(P[(m.v + 3) % 4], V)), u2 = unit(sub(P[(m.v + 1) % 4], V));
+      if (m.t === 'arc') {
+        const a1 = Math.atan2(u1[1], u1[0]), a2 = Math.atan2(u2[1], u2[0]);
+        let df = a2 - a1; while (df > Math.PI) df -= 2 * Math.PI; while (df < -Math.PI) df += 2 * Math.PI;
+        c.strokeStyle = MARKCOL[m.n]; c.lineWidth = 2.4;
+        for (let i = 0; i < m.n; i++) { c.beginPath(); c.arc(V[0], V[1], 18 + i * 5, a1, a1 + df, df < 0); c.stroke(); }
+      } else if (m.t === 'right') {
+        const s = 13; c.strokeStyle = MARKCOL[1]; c.lineWidth = 2.2;
+        c.beginPath(); c.moveTo(V[0] + u1[0] * s, V[1] + u1[1] * s); c.lineTo(V[0] + (u1[0] + u2[0]) * s, V[1] + (u1[1] + u2[1]) * s); c.lineTo(V[0] + u2[0] * s, V[1] + u2[1] * s); c.stroke();
+      } else {
+        const val = interior(q.sh.pts, m.v); const bis = unit([u1[0] + u2[0], u1[1] + u2[1]]);
+        c.strokeStyle = '#7a5130'; c.lineWidth = 1.6; const a1 = Math.atan2(u1[1], u1[0]), a2 = Math.atan2(u2[1], u2[0]);
+        let df = a2 - a1; while (df > Math.PI) df -= 2 * Math.PI; while (df < -Math.PI) df += 2 * Math.PI;
+        c.beginPath(); c.arc(V[0], V[1], 14, a1, a1 + df, df < 0); c.stroke();
+        textOut(val + '°', V[0] + bis[0] * 36, V[1] + bis[1] * 36, 15, '#7a2b12');
+      }
+    } else if (m.t === 'len') {
+      const p = P[m.a], q2 = P[m.b]; const mm = [(p[0] + q2[0]) / 2, (p[1] + q2[1]) / 2];
+      const d = unit(sub(q2, p)); let nr = [-d[1], d[0]]; if (nr[0] * (mm[0] - G[0]) + nr[1] * (mm[1] - G[1]) < 0) nr = [-nr[0], -nr[1]];
+      textOut(m.txt, mm[0] + nr[0] * 17, mm[1] + nr[1] * 17, 16, '#7a2b12');
+    } else if (m.t === 'dtick') {
+      drawTicks(P[m.v], E, m.n, MARKCOL[m.n]);
+    } else if (m.t === 'dlen') {
+      const p = P[m.v]; const mm = [(p[0] + E[0]) / 2, (p[1] + E[1]) / 2]; const d = unit(sub(E, p)); let nr = [-d[1], d[0]];
+      // put label on the side away from the next vertex so it doesn't sit on a side
+      const nx = P[(m.v + 1) % 4]; if (nr[0] * (nx[0] - mm[0]) + nr[1] * (nx[1] - mm[1]) > 0) nr = [-nr[0], -nr[1]];
+      textOut(m.txt, mm[0] + nr[0] * 11, mm[1] + nr[1] * 11, 14, '#7a2b12');
+    } else if (m.t === 'perp') {
+      const u1 = unit(sub(P[0], E)), u2 = unit(sub(P[1], E)), s = 12;
+      c.strokeStyle = MARKCOL[1]; c.lineWidth = 2.2;
+      c.beginPath(); c.moveTo(E[0] + u1[0] * s, E[1] + u1[1] * s); c.lineTo(E[0] + (u1[0] + u2[0]) * s, E[1] + (u1[1] + u2[1]) * s); c.lineTo(E[0] + u2[0] * s, E[1] + u2[1] * s); c.stroke();
+    } else if (m.t === 'legend') {
+      c.fillStyle = '#fff3cf'; c.strokeStyle = '#b08a4e'; c.lineWidth = 1.5;
+      c.font = '800 15px Nunito, system-ui, sans-serif'; const w = c.measureText(m.txt).width + 20;
+      c.beginPath(); c.roundRect ? c.roundRect(W / 2 - w / 2, H - 28, w, 24, 6) : c.rect(W / 2 - w / 2, H - 28, w, 24); c.fill(); c.stroke();
+      c.fillStyle = '#1d2238'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(m.txt, W / 2, H - 16);
+    }
+  }
+  // vertex labels
+  P.forEach((p, i) => { const u = unit(sub(p, G)); textOut(LBL[i], p[0] + u[0] * 17, p[1] + u[1] * 17, 19, '#1d2238'); });
+  if (showDiag) {
+    // E label in the widest gap (between B and C directions)
+    const u = unit([unit(sub(P[1], E))[0] + unit(sub(P[2], E))[0], unit(sub(P[1], E))[1] + unit(sub(P[2], E))[1]]);
+    c.fillStyle = '#1d2238'; c.beginPath(); c.arc(E[0], E[1], 2.6, 0, 7); c.fill();
+    textOut('E', E[0] + u[0] * 20, E[1] + u[1] * 20, 16, '#1d2238');
+  }
+}
+
+/* =========================================================
+   Audio
+   ========================================================= */
+let AC = null, muted = false;
+function beep(f, dur, type = 'sine', vol = .12, f2 = null, delay = 0) {
+  if (muted) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t0); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t0 + dur);
+    g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + dur);
+    o.connect(g); g.connect(AC.destination); o.start(t0); o.stop(t0 + dur + .02);
+  } catch (e) { /* audio unavailable */ }
+}
+const sfx = {
+  coin() { beep(988, .07, 'square', .05); beep(1319, .12, 'square', .05, null, .06); },
+  jump() { beep(300, .18, 'triangle', .1, 600); },
+  slide() { beep(400, .2, 'sawtooth', .04, 150); },
+  hit() { beep(140, .3, 'sawtooth', .12, 60); },
+  good() { [523, 659, 784, 1047].forEach((f, i) => beep(f, .18, 'triangle', .1, null, i * .08)); },
+  bad() { beep(220, .25, 'square', .08, 110); beep(160, .35, 'square', .08, 80, .18); },
+  pick() { beep(660, .06, 'triangle', .08); },
+};
+
+/* =========================================================
+   Game state
+   ========================================================= */
+const cv = $('game'), ctx = cv.getContext('2d');
+let W, H, F, HZ, CH;
+const PZ = 4, LX = 1.7, RW = 2.75, ZFAR = 95, SPAWNZ = 62;
+const DIFF = {
+  study: { speed: 8, answer: 24, obstacles: false, accel: .08 },
+  run: { speed: 11, answer: 15, obstacles: true, accel: .18 },
+  sprint: { speed: 14, answer: 9, obstacles: true, accel: .28 },
+};
+const S = { mode: 'title', t: 0, dist: 0, speed: 6, px: 0, lane: 0, py: 0, vy: 0, slideT: 0, objs: [], chase: 0, flash: null, paused: false, stumbleT: 0 };
+
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = innerWidth; H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  HZ = H * .42;
+  F = Math.min(H * .95, W * 1.0);
+  CH = (H * .90 - HZ) * PZ / F;
+}
+addEventListener('resize', resize); resize();
+const proj = (x, y, z) => [W / 2 + x * F / z, HZ + (CH - y) * F / z, F / z];
+
+function newGame() {
+  const diff = document.querySelector('input[name=diff]:checked').value;
+  const n = +document.querySelector('input[name=len]:checked').value;
+  Object.assign(S, {
+    mode: 'play', diffKey: diff, diff: DIFF[diff], practice: $('practiceIn').checked, name: $('nameIn').value.trim(),
+    qList: buildQuestions(n), qi: 0, lives: 3, score: 0, coins: 0, dist: 0, speed: DIFF[diff].speed,
+    streak: 0, bestStreak: 0, results: [], px: 0, lane: 0, py: 0, vy: 0, slideT: 0, objs: [], gate: null,
+    chase: 0, flash: null, paused: false, stumbleT: 0, rush: false, ending: 0, hits: 0, startT: performance.now(),
+  });
+  startRun(true);
+  ['titleScr', 'resScr', 'guideScr', 'fbScr', 'pauseScr'].forEach(id => $(id).classList.add('hidden'));
+  $('hud').classList.remove('hidden');
+  $('touchpad').classList.add('on');
+  updateHud();
+  toast(`<b class="big">RUN, PROFESSOR!</b>At each gate: <b>LEFT</b> arch = Parallelogram · <b>RIGHT</b> arch = Not enough info`, 4200, true);
+}
+
+function startRun(first) {
+  S.phase = 'run'; S.runDist = 0; S.gate = null; S.rush = false;
+  const d = S.diff;
+  S.spawnStop = d.obstacles ? S.speed * (first ? 3.5 : 2.6) : 0;
+  S.runLen = S.speed * (d.obstacles ? 2.6 : (first ? 3 : 2));
+  S.spawnNext = first ? 10 : 4;
+  // a few coins even in Study mode
+  if (!d.obstacles) spawnCoins(pick([-1, 0, 1]), SPAWNZ * .6, 6);
+}
+
+function spawnCoins(lane, z, n, arc = false) {
+  for (let i = 0; i < n; i++) S.objs.push({ kind: 'coin', x: lane * LX, z: z + i * 2.4, y: arc ? .6 + Math.sin(i / (n - 1) * Math.PI) * 1.1 : .6 });
+}
+function spawnPattern() {
+  const r = Math.random(), lane = ri(-1, 1), z = SPAWNZ;
+  if (r < .32) { S.objs.push({ kind: 'log', x: lane * LX, z }); spawnCoins(lane, z - 3.6, 4, true); spawnCoins(pick([-1, 0, 1].filter(l => l !== lane)), z, 3); }
+  else if (r < .58) { const free = ri(-1, 1); [-1, 0, 1].filter(l => l !== free).forEach(l => { if (chance(.75) || l === lane) S.objs.push({ kind: 'block', x: l * LX, z }); }); spawnCoins(free, z - 4, 4); }
+  else if (r < .8) { S.objs.push({ kind: 'vine', x: 0, z }); spawnCoins(lane, z + 3, 3); }
+  else spawnCoins(lane, z, 6);
+}
+
+function startQuestion() {
+  S.phase = 'question'; S.cur = S.qList[S.qi]; S.lane = 0; S.chosen = 0; S.rush = false; S.hintUsed = false;
+  S.gate = { z: PZ + S.speed * S.diff.answer }; S.gateTotal = S.gate.z - PZ;
+  showCard();
+}
+
+function choose(l) {
+  if (S.mode !== 'play' || S.paused || S.phase !== 'question') return;
+  if (S.lane !== l) sfx.pick();
+  S.lane = l; S.chosen = l; S.rush = true;
+  $('btnYes').classList.toggle('picked', l === -1); $('btnNo').classList.toggle('picked', l === 1);
+  $('btnYes').classList.toggle('dim', l === 1); $('btnNo').classList.toggle('dim', l === -1);
+}
+
+function resolveGate() {
+  const q = S.cur, ans = S.lane;
+  const correct = (ans === -1 && q.ok) || (ans === 1 && !q.ok);
+  S.results.push({ q, ans, correct, hint: S.hintUsed });
+  hideCard(); S.qi++; S.gate = null; S.rush = false;
+  if (correct) {
+    S.streak++; S.bestStreak = Math.max(S.bestStreak, S.streak);
+    const pts = Math.round((100 + 25 * Math.min(S.streak - 1, 8)) * (S.hintUsed ? .5 : 1));
+    S.score += pts; S.flash = { col: '56,210,122', t: .5 };
+    sfx.good();
+    toast(`<b class="big">✔ ${q.ok ? 'PARALLELOGRAM!' : 'NOT ENOUGH INFO!'} +${pts}</b>${fmt(q.short)}${S.streak >= 3 ? ` · 🔥 ${S.streak} in a row!` : ''}`, 3200, true);
+    S.speed += S.diff.accel;
+    updateHud();
+    if (S.qi >= S.qList.length) { S.ending = 1.6; S.phase = 'end'; return; }
+    startRun(false);
+  } else {
+    S.streak = 0; if (!S.practice) S.lives--; S.chase = 7; S.flash = { col: '220,60,40', t: .7 };
+    sfx.bad(); updateHud();
+    showFeedback(q, ans);
+  }
+}
+
+function stumble(o) {
+  o.hit = true; S.hits++; S.score = Math.max(0, S.score - 25); S.stumbleT = .6; S.chase = Math.max(S.chase, 3.5);
+  S.flash = { col: '220,60,40', t: .35 }; sfx.hit(); updateHud();
+}
+
+function update(dt) {
+  S.t += dt;
+  const sp = S.speed * (S.rush ? 3.2 : 1) * (S.stumbleT > 0 ? .55 : 1);
+  S.dist += sp * dt;
+  S.px += (S.lane * LX - S.px) * Math.min(1, dt * 13);
+  if (S.py > 0 || S.vy > 0) { S.vy -= 24 * dt; S.py += S.vy * dt; if (S.py <= 0) { S.py = 0; S.vy = 0; } }
+  if (S.slideT > 0) S.slideT -= dt;
+  if (S.stumbleT > 0) S.stumbleT -= dt;
+  if (S.chase > 0) S.chase -= dt;
+  if (S.flash) { S.flash.t -= dt; if (S.flash.t <= 0) S.flash = null; }
+
+  for (const o of S.objs) {
+    const pz = o.z; o.z -= sp * dt;
+    if (!o.done && pz > PZ && o.z <= PZ) {
+      o.done = true;
+      const near = Math.abs(S.px - o.x) < .95;
+      if (o.kind === 'coin') { if (Math.abs(S.px - o.x) < .9 && Math.abs(S.py + .6 - o.y) < 1.1) { o.got = true; S.coins++; S.score += 10; sfx.coin(); updateHud(); } }
+      else if (o.kind === 'log') { if (near && S.py < .55) stumble(o); }
+      else if (o.kind === 'block') { if (near) stumble(o); }
+      else if (o.kind === 'vine') { if (S.slideT <= 0) stumble(o); }
+    }
+  }
+  S.objs = S.objs.filter(o => o.z > .8 && !o.got);
+
+  if (S.phase === 'run') {
+    S.runDist += sp * dt;
+    if (S.diff.obstacles && S.runDist >= S.spawnNext && S.runDist < S.spawnStop) { spawnPattern(); S.spawnNext += rand(17, 26); }
+    const clear = !S.objs.some(o => o.kind !== 'coin' && o.z > PZ - .5);
+    if (S.runDist >= S.runLen + (S.diff.obstacles ? S.spawnStop : 0) && clear) startQuestion();
+  } else if (S.phase === 'question') {
+    S.gate.z -= sp * dt;
+    $('timerFill').style.transform = `scaleX(${clamp((S.gate.z - PZ) / S.gateTotal, 0, 1)})`;
+    if (S.gate.z <= PZ) resolveGate();
+  } else if (S.phase === 'end') {
+    S.ending -= dt; if (S.ending <= 0) finish(true);
+  }
+}
+
+/* =========================================================
+   Rendering
+   ========================================================= */
+function drawSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, HZ);
+  g.addColorStop(0, '#3d84c6'); g.addColorStop(.6, '#9cc8e0'); g.addColorStop(1, '#f6d69a');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, HZ + 2);
+  // sun
+  const sx = W * .78, sy = HZ * .45;
+  const sg = ctx.createRadialGradient(sx, sy, 5, sx, sy, HZ * .5); sg.addColorStop(0, 'rgba(255,240,190,.95)'); sg.addColorStop(.25, 'rgba(255,220,140,.5)'); sg.addColorStop(1, 'rgba(255,220,140,0)');
+  ctx.fillStyle = sg; ctx.fillRect(0, 0, W, HZ);
+  ctx.fillStyle = '#fff3c4'; ctx.beginPath(); ctx.arc(sx, sy, Math.max(14, HZ * .09), 0, 7); ctx.fill();
+  // far mountains (parallax with distance)
+  const off = (S.dist * .4) % 400;
+  ctx.fillStyle = '#7aa08a';
+  ctx.beginPath(); ctx.moveTo(0, HZ);
+  for (let x = -400; x <= W + 400; x += 40) { const k = Math.floor((x + off) / 40); ctx.lineTo(x - off % 40, HZ - 30 - hash(k) * HZ * .25); }
+  ctx.lineTo(W, HZ); ctx.closePath(); ctx.fill();
+  // temple ziggurat on the horizon
+  const tw = Math.min(W * .5, 380), cx = W / 2, base = HZ + 1;
+  ctx.fillStyle = '#8a7556';
+  for (let i = 0; i < 5; i++) { const w = tw * (1 - i * .17), h = HZ * .055; ctx.fillRect(cx - w / 2, base - h * (i + 1), w, h + 1); }
+  ctx.fillStyle = '#6b5a40';
+  const th = HZ * .055 * 5, dw = tw * .1;
+  ctx.fillRect(cx - dw / 2, base - th - HZ * .07, dw, HZ * .07);
+  // parallelogram emblem on top
+  ctx.fillStyle = '#f2c14e'; ctx.beginPath();
+  const ey = base - th - HZ * .07 - 6, ew = dw * 1.2, eh = HZ * .06;
+  ctx.moveTo(cx - ew / 2 + ew * .2, ey - eh); ctx.lineTo(cx + ew / 2 + ew * .2, ey - eh); ctx.lineTo(cx + ew / 2 - ew * .2, ey); ctx.lineTo(cx - ew / 2 - ew * .2, ey); ctx.closePath(); ctx.fill();
+  // near jungle treeline
+  ctx.fillStyle = '#2f5e3a';
+  ctx.beginPath(); ctx.moveTo(0, HZ + 2);
+  const off2 = (S.dist * 1.1) % 60;
+  for (let x = -60; x <= W + 60; x += 30) { const k = Math.floor((x + S.dist * 1.1) / 30); ctx.lineTo(x - off2 % 30, HZ - 6 - hash(k + 99) * 22); }
+  ctx.lineTo(W, HZ + 2); ctx.closePath(); ctx.fill();
+  // cut a gap for the temple and road
+  ctx.fillStyle = '#8a7556'; ctx.fillRect(cx - tw * .1, HZ - 8, tw * .2, 10);
+}
+
+function drawGround() {
+  const zNear = CH * F / (H - HZ) * .98;
+  const seg = 2.2, phase = S.dist % (seg * 2);
+  ctx.fillStyle = '#2c6534'; ctx.fillRect(0, HZ, W, H - HZ);
+  // from far to near
+  let k0 = Math.floor((ZFAR + phase) / seg);
+  for (let k = k0; k >= 0; k--) {
+    const z2 = k * seg - phase + seg, z1 = Math.max(zNear, z2 - seg);
+    if (z2 <= zNear) continue;
+    const zf = Math.min(z2, ZFAR);
+    const y1 = proj(0, 0, z1)[1], y2 = proj(0, 0, zf)[1];
+    const alt = ((k + Math.floor((S.dist) / (seg * 2)) * 2) % 2 + 2) % 2;
+    // grass bands
+    ctx.fillStyle = alt ? '#2f6d37' : '#29602f';
+    ctx.fillRect(0, y2, W, y1 - y2 + 1);
+    // road
+    const a1 = proj(-RW, 0, z1), b1 = proj(RW, 0, z1), a2 = proj(-RW, 0, zf), b2 = proj(RW, 0, zf);
+    ctx.fillStyle = alt ? '#cdb58d' : '#bea67d';
+    ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.lineTo(b2[0], b2[1]); ctx.lineTo(a2[0], a2[1]); ctx.closePath(); ctx.fill();
+    // stone joints
+    ctx.strokeStyle = 'rgba(90,70,40,.35)'; ctx.lineWidth = Math.max(1, F / z1 * .03);
+    ctx.beginPath(); ctx.moveTo(a1[0], a1[1]); ctx.lineTo(b1[0], b1[1]); ctx.stroke();
+    const off = alt ? 0 : .5;
+    for (let j = -2; j <= 2; j++) { const x = (j + off) * RW / 2.5; if (Math.abs(x) >= RW) continue; const p1 = proj(x, 0, z1), p2 = proj(x, 0, zf); ctx.beginPath(); ctx.moveTo(p1[0], p1[1]); ctx.lineTo(p2[0], p2[1]); ctx.stroke(); }
+    // curbs
+    for (const s of [-1, 1]) {
+      const c1 = proj(s * RW, 0, z1), c2 = proj(s * (RW + .45), 0, z1), c3 = proj(s * (RW + .45), 0, zf), c4 = proj(s * RW, 0, zf);
+      ctx.fillStyle = alt ? '#8a7352' : '#7a6446';
+      ctx.beginPath(); ctx.moveTo(c1[0], c1[1]); ctx.lineTo(c2[0], c2[1]); ctx.lineTo(c3[0], c3[1]); ctx.lineTo(c4[0], c4[1]); ctx.closePath(); ctx.fill();
+    }
+  }
+  // haze near the horizon
+  const hg = ctx.createLinearGradient(0, HZ, 0, HZ + H * .1);
+  hg.addColorStop(0, 'rgba(246,214,154,.85)'); hg.addColorStop(1, 'rgba(246,214,154,0)');
+  ctx.fillStyle = hg; ctx.fillRect(0, HZ, W, H * .1);
+}
+
+function fogAlpha(z) { return clamp((ZFAR + 10 - z) / 25, 0, 1); }
+
+function drawTree(x, z, h) {
+  const [bx, by, s] = proj(x, 0, z);
+  ctx.globalAlpha = fogAlpha(z);
+  ctx.fillStyle = '#4b3420'; ctx.fillRect(bx - .22 * s, by - 2.6 * s, .44 * s, 2.6 * s);
+  const cols = ['#1f4d2b', '#28603a', '#337a45'];
+  [[-.7, 2.9, 1.2], [.7, 3.0, 1.1], [0, 3.6, 1.35], [0, 2.7, 1.1]].forEach(([dx, dy, r], i) => {
+    ctx.fillStyle = cols[(i + Math.floor(h * 3)) % 3]; ctx.beginPath(); ctx.arc(bx + dx * s, by - dy * s, r * s * (.85 + h * .3), 0, 7); ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+}
+function drawPillar(x, z, broken) {
+  const [bx, by, s] = proj(x, 0, z), h = broken ? 2.2 : 4;
+  ctx.globalAlpha = fogAlpha(z);
+  ctx.fillStyle = '#a99472'; ctx.fillRect(bx - .4 * s, by - h * s, .8 * s, h * s);
+  ctx.fillStyle = 'rgba(0,0,0,.15)'; for (let i = -1; i <= 1; i++) ctx.fillRect(bx + (i * .22 - .03) * s, by - h * s, .06 * s, h * s);
+  ctx.fillStyle = '#8f7a59'; ctx.fillRect(bx - .55 * s, by - .3 * s, 1.1 * s, .3 * s);
+  if (!broken) { ctx.fillRect(bx - .6 * s, by - (h + .3) * s, 1.2 * s, .35 * s); }
+  else { ctx.fillStyle = '#a99472'; ctx.beginPath(); ctx.moveTo(bx - .4 * s, by - h * s); ctx.lineTo(bx - .1 * s, by - (h + .5) * s); ctx.lineTo(bx + .15 * s, by - (h + .15) * s); ctx.lineTo(bx + .4 * s, by - (h + .35) * s); ctx.lineTo(bx + .4 * s, by - h * s); ctx.fill(); }
+  // vines
+  ctx.strokeStyle = '#2f6d37'; ctx.lineWidth = Math.max(1, .09 * s); ctx.beginPath();
+  ctx.moveTo(bx - .4 * s, by - h * .9 * s); ctx.quadraticCurveTo(bx + .5 * s, by - h * .6 * s, bx - .3 * s, by - h * .3 * s); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+function drawBush(x, z) {
+  const [bx, by, s] = proj(x, 0, z); ctx.globalAlpha = fogAlpha(z);
+  ctx.fillStyle = '#235a2e'; ctx.beginPath(); ctx.ellipse(bx, by, .9 * s, .6 * s, 0, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#e45d7a'; ctx.beginPath(); ctx.arc(bx + .3 * s, by - .35 * s, .1 * s, 0, 7); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+
+function drawCoin(o) {
+  const [x, y, s] = proj(o.x, o.y, o.z); ctx.globalAlpha = fogAlpha(o.z);
+  const w = Math.abs(Math.cos(S.t * 4 + o.z * .3)) * .32 * s + .04 * s;
+  ctx.fillStyle = '#b8860b'; ctx.beginPath(); ctx.ellipse(x, y, w + .03 * s, .34 * s, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#f7c948'; ctx.beginPath(); ctx.ellipse(x, y, w, .3 * s, 0, 0, 7); ctx.fill();
+  if (w > .18 * s) { ctx.fillStyle = '#9a6b00'; ctx.font = `900 ${.36 * s}px Nunito, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('°', x + .02 * s, y + .05 * s); }
+  ctx.globalAlpha = 1;
+}
+function drawLog(o) {
+  const [x, y, s] = proj(o.x, 0, o.z); ctx.globalAlpha = fogAlpha(o.z);
+  const w = 1.5 * s, h = .6 * s;
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse(x, y, w * .55, h * .25, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#a58f69'; ctx.fillRect(x - w / 2, y - h, w, h);
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; for (let i = 1; i < 5; i++) ctx.fillRect(x - w / 2, y - h + i * h / 5, w, h * .05);
+  ctx.fillStyle = '#c4ae86'; ctx.beginPath(); ctx.ellipse(x - w / 2, y - h / 2, h * .25, h / 2, 0, 0, 7); ctx.fill(); ctx.beginPath(); ctx.ellipse(x + w / 2, y - h / 2, h * .25, h / 2, 0, 0, 7); ctx.fill();
+  ctx.globalAlpha = 1;
+}
+function drawBlock(o) {
+  const [x, y, s] = proj(o.x, 0, o.z); ctx.globalAlpha = fogAlpha(o.z);
+  const w = 1.3 * s, h = 1.9 * s;
+  ctx.fillStyle = '#7c6a4c'; ctx.fillRect(x - w / 2, y - h, w, h);
+  ctx.fillStyle = '#958160'; ctx.fillRect(x - w / 2, y - h, w, h * .18);
+  ctx.strokeStyle = 'rgba(0,0,0,.25)'; ctx.lineWidth = Math.max(1, .05 * s); ctx.strokeRect(x - w / 2, y - h, w, h);
+  // carved triangle glyph
+  ctx.strokeStyle = '#f2c14e'; ctx.lineWidth = Math.max(1, .07 * s); ctx.beginPath(); ctx.moveTo(x, y - h * .75); ctx.lineTo(x + w * .28, y - h * .3); ctx.lineTo(x - w * .28, y - h * .3); ctx.closePath(); ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+function drawVine(o) {
+  const z = o.z, s = F / z; ctx.globalAlpha = fogAlpha(z);
+  const l = proj(-RW - .3, 0, z), r = proj(RW + .3, 0, z), top = proj(0, 2.6, z)[1], beamB = proj(0, 1.25, z)[1];
+  ctx.fillStyle = '#8a7556'; ctx.fillRect(l[0] - .25 * s, top, .5 * s, l[1] - top); ctx.fillRect(r[0] - .25 * s, top, .5 * s, r[1] - top);
+  ctx.fillStyle = '#9d8763'; ctx.fillRect(l[0] - .3 * s, top, r[0] - l[0] + .6 * s, beamB - top);
+  ctx.fillStyle = 'rgba(0,0,0,.18)'; ctx.fillRect(l[0] - .3 * s, beamB - (beamB - top) * .2, r[0] - l[0] + .6 * s, (beamB - top) * .2);
+  ctx.strokeStyle = '#2f7a3c'; ctx.lineWidth = Math.max(1, .08 * s);
+  for (let i = 0; i < 9; i++) { const vx = l[0] + (r[0] - l[0]) * (i + .5) / 9; ctx.beginPath(); ctx.moveTo(vx, beamB); ctx.quadraticCurveTo(vx + .15 * s * Math.sin(i + S.t * 2), beamB + .3 * s, vx, beamB + (.25 + hash(i) * .3) * s); ctx.stroke(); }
+  ctx.fillStyle = '#fff3c4'; ctx.font = `900 ${Math.max(8, .38 * s)}px Nunito, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  if (s > 18) ctx.fillText('▼ SLIDE ▼', W / 2, (top + beamB) / 2);
+  ctx.globalAlpha = 1;
+}
+
+function drawGate(z) {
+  if (z > ZFAR + 10) return;
+  const s = F / z; ctx.globalAlpha = fogAlpha(z);
+  const P = (x, y) => proj(x, y, z);
+  const wl = P(-9, 0), wr = P(9, 0), wt = P(0, 5.6)[1];
+  // wall
+  ctx.fillStyle = '#9d8763'; ctx.fillRect(wl[0], wt, wr[0] - wl[0], wl[1] - wt);
+  // brick lines
+  ctx.strokeStyle = 'rgba(60,40,20,.28)'; ctx.lineWidth = Math.max(1, .04 * s);
+  for (let i = 1; i < 7; i++) { const y = P(0, i * .8)[1]; ctx.beginPath(); ctx.moveTo(wl[0], y); ctx.lineTo(wr[0], y); ctx.stroke();
+    for (let j = -9; j < 9; j += 1.6) { const x = P(j + (i % 2) * .8, 0)[0]; const y2 = P(0, (i - 1) * .8)[1]; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y2); ctx.stroke(); } }
+  // crenellations
+  ctx.fillStyle = '#8a7556';
+  for (let j = -9; j < 9; j += 1.5) { const a = P(j, 5.6), b = P(j + .8, 6.2); ctx.fillRect(a[0], b[1], b[0] - a[0], a[1] - b[1]); }
+  // openings
+  const open = (cx, col1, col2) => {
+    const L = P(cx - .95, 0), R = P(cx + .95, 0), T = P(cx, 2.9), rr = (R[0] - L[0]) / 2;
+    ctx.beginPath(); ctx.moveTo(L[0], L[1]); ctx.lineTo(L[0], T[1]); ctx.arc((L[0] + R[0]) / 2, T[1], rr, Math.PI, 0); ctx.lineTo(R[0], R[1]); ctx.closePath();
+    const g = ctx.createLinearGradient(0, T[1] - rr, 0, L[1]); g.addColorStop(0, col1); g.addColorStop(1, col2);
+    ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = '#5b4a33'; ctx.lineWidth = Math.max(1.5, .12 * s); ctx.stroke();
+    // glow particles
+    for (let i = 0; i < 6; i++) { const px = L[0] + rr * 2 * hash(i + cx * 10), py = L[1] - (((S.t * 40 + i * 37) % 100) / 100) * (L[1] - T[1]); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(px, py, Math.max(1, .05 * s), 0, 7); ctx.fill(); }
+  };
+  open(-LX, '#b9ffd5', '#1f9d55');
+  open(LX, '#ffd6b0', '#d9622b');
+  // signs
+  const sign = (cx, bg, text1, text2) => {
+    const a = P(cx - 1.38, 4.85), b = P(cx + 1.38, 3.55);
+    ctx.fillStyle = '#5b3a1e'; ctx.fillRect(a[0] - .08 * s, a[1] - .08 * s, b[0] - a[0] + .16 * s, b[1] - a[1] + .16 * s);
+    ctx.fillStyle = bg; ctx.fillRect(a[0], a[1], b[0] - a[0], b[1] - a[1]);
+    if (s < 4) return;
+    ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const fs = .5 * s; ctx.font = `${fs}px "Luckiest Guy", Nunito, sans-serif`;
+    const tw = ctx.measureText(text1).width, maxw = (b[0] - a[0]) * .92, k = Math.min(1, maxw / tw);
+    ctx.font = `${fs * k}px "Luckiest Guy", Nunito, sans-serif`;
+    ctx.fillText(text1, (a[0] + b[0]) / 2, a[1] + (b[1] - a[1]) * .36);
+    ctx.font = `700 ${fs * .55}px Nunito, sans-serif`;
+    ctx.fillText(text2, (a[0] + b[0]) / 2, a[1] + (b[1] - a[1]) * .76);
+  };
+  sign(-LX, '#1f9d55', 'PARALLELOGRAM ✓', '◀ it is proven');
+  sign(LX, '#d9622b', 'NOT ENOUGH INFO ✗', 'can\'t be sure ▶');
+  // center emblem
+  const e = P(0, 5.2), es = .36 * s;
+  ctx.fillStyle = '#f2c14e'; ctx.strokeStyle = '#5b3a1e'; ctx.lineWidth = Math.max(1, .06 * s);
+  ctx.beginPath(); ctx.moveTo(e[0] - es + es * .35, e[1] - es * .6); ctx.lineTo(e[0] + es + es * .35, e[1] - es * .6); ctx.lineTo(e[0] + es - es * .35, e[1] + es * .6); ctx.lineTo(e[0] - es - es * .35, e[1] + es * .6); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#5b3a1e'; ctx.font = `900 ${.32 * s}px Nunito, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', e[0], e[1] + .02 * s);
+  ctx.globalAlpha = 1;
+}
+
+/* ---------- Professor Protractor (back view, running) ---------- */
+function drawRunner() {
+  const ground = proj(S.px, 0, PZ), feet = proj(S.px, S.py, PZ), s = F / PZ;
+  const u = s * 1.75 / 18;
+  const x = feet[0], y = feet[1];
+  // shadow
+  ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(ground[0], ground[1], u * 5 * (1 - S.py * .2), u * 1.4, 0, 0, 7); ctx.fill();
+  const running = S.mode === 'play' && !S.paused || S.mode === 'title';
+  const ph = running ? S.t * (S.rush ? 22 : 14) : 0;
+  const sliding = S.slideT > 0, air = S.py > 0;
+  ctx.save(); ctx.translate(x, y);
+  if (sliding) { ctx.scale(1.1, .55); }
+  const tilt = (S.lane * LX - S.px) * -.06; ctx.rotate(tilt);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // legs
+  const legs = [[-1.3, Math.sin(ph)], [1.3, -Math.sin(ph)]];
+  for (const [lx, sw] of legs) {
+    const lift = air ? 3 : Math.max(0, sw) * 3.2;
+    ctx.strokeStyle = '#c9a66b'; ctx.lineWidth = 2.6 * u;
+    ctx.beginPath(); ctx.moveTo(lx * u, -8 * u); ctx.lineTo(lx * 1.05 * u, (-4.2 - lift * .4) * u); ctx.lineTo(lx * 1.1 * u, (-1 - lift) * u); ctx.stroke();
+    ctx.fillStyle = '#4a2c16'; ctx.beginPath(); ctx.ellipse(lx * 1.1 * u, (-.5 - lift) * u, 1.5 * u, 1 * u, 0, 0, 7); ctx.fill();
+  }
+  // belt + pants top
+  ctx.fillStyle = '#c9a66b'; ctx.fillRect(-3 * u, -9 * u, 6 * u, 2 * u);
+  ctx.fillStyle = '#3b2a1a'; ctx.fillRect(-3.1 * u, -9.4 * u, 6.2 * u, .8 * u);
+  // arms (behind torso edges)
+  const armSw = Math.sin(ph) * 2.2;
+  for (const [sx, sw] of [[-1, armSw], [1, -armSw]]) {
+    ctx.strokeStyle = '#a9cdee'; ctx.lineWidth = 1.9 * u;
+    ctx.beginPath(); ctx.moveTo(sx * 2.9 * u, -14 * u); ctx.lineTo(sx * 4.1 * u, (-11.5 + sw * .4) * u); ctx.lineTo(sx * 4 * u, (-9 + sw) * u); ctx.stroke();
+    ctx.fillStyle = '#f0c29a'; ctx.beginPath(); ctx.arc(sx * 4 * u, (-8.6 + sw) * u, .95 * u, 0, 7); ctx.fill();
+    if (sx === 1) { // compass in right hand
+      const hx = 4 * u, hy = (-8.6 + sw) * u;
+      ctx.strokeStyle = '#9aa3ad'; ctx.lineWidth = .45 * u;
+      ctx.beginPath(); ctx.moveTo(hx, hy - 1.2 * u); ctx.lineTo(hx - .9 * u, hy + 2.4 * u); ctx.moveTo(hx, hy - 1.2 * u); ctx.lineTo(hx + 1 * u, hy + 2.4 * u); ctx.stroke();
+      ctx.fillStyle = '#e8c547'; ctx.fillRect(hx + .8 * u, hy + 1.8 * u, .4 * u, .9 * u);
+    }
+  }
+  // torso: maroon sweater vest
+  ctx.fillStyle = '#7b2d3b';
+  ctx.beginPath(); ctx.moveTo(-3.2 * u, -14.6 * u); ctx.lineTo(3.2 * u, -14.6 * u); ctx.lineTo(3 * u, -9 * u); ctx.lineTo(-3 * u, -9 * u); ctx.closePath(); ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,.12)'; ctx.lineWidth = .3 * u; for (let i = -2; i <= 2; i++) { ctx.beginPath(); ctx.moveTo(i * 1.2 * u, -14.4 * u); ctx.lineTo(i * 1.15 * u, -9.2 * u); ctx.stroke(); }
+  // protractor strapped to back
+  ctx.save(); ctx.translate(0, -10.2 * u);
+  ctx.fillStyle = 'rgba(250, 226, 120, .9)'; ctx.strokeStyle = '#b08a1e'; ctx.lineWidth = .35 * u;
+  ctx.beginPath(); ctx.arc(0, 0, 3.7 * u, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, 2.2 * u, Math.PI, 0); ctx.stroke();
+  for (let a = 0; a <= 18; a++) { const ang = Math.PI + a * Math.PI / 18, r1 = a % 9 === 0 ? 2.6 : 3.1; ctx.beginPath(); ctx.moveTo(Math.cos(ang) * r1 * u, Math.sin(ang) * r1 * u); ctx.lineTo(Math.cos(ang) * 3.65 * u, Math.sin(ang) * 3.65 * u); ctx.stroke(); }
+  ctx.fillStyle = '#b08a1e'; ctx.beginPath(); ctx.arc(0, 0, .45 * u, 0, 7); ctx.fill();
+  ctx.restore();
+  // straps
+  ctx.strokeStyle = '#3b2a1a'; ctx.lineWidth = .7 * u;
+  ctx.beginPath(); ctx.moveTo(-2.6 * u, -14.5 * u); ctx.lineTo(-2.2 * u, -10.3 * u); ctx.moveTo(2.6 * u, -14.5 * u); ctx.lineTo(2.2 * u, -10.3 * u); ctx.stroke();
+  // collar + flapping tie over shoulder
+  ctx.fillStyle = '#d7e8f7'; ctx.fillRect(-1.6 * u, -15.4 * u, 3.2 * u, 1 * u);
+  const fl = Math.sin(S.t * 18) * .6;
+  ctx.fillStyle = '#c0392b'; ctx.beginPath(); ctx.moveTo(1 * u, -15 * u); ctx.lineTo(3.3 * u, (-16.6 + fl) * u); ctx.lineTo(3.9 * u, (-15.6 + fl) * u); ctx.lineTo(1.4 * u, -14.4 * u); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#f2c14e'; ctx.beginPath(); ctx.arc(2.7 * u, (-15.7 + fl * .7) * u, .25 * u, 0, 7); ctx.fill();
+  // neck, head
+  ctx.fillStyle = '#e8b48c'; ctx.fillRect(-.9 * u, -16.4 * u, 1.8 * u, 1.4 * u);
+  ctx.beginPath(); ctx.ellipse(-2.35 * u, -17.6 * u, .55 * u, .8 * u, 0, 0, 7); ctx.ellipse(2.35 * u, -17.6 * u, .55 * u, .8 * u, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#6b4226'; ctx.beginPath(); ctx.arc(0, -18.1 * u, 2.45 * u, 0, 7); ctx.fill();
+  // bald spot
+  ctx.fillStyle = '#efc19c'; ctx.beginPath(); ctx.ellipse(0, -19.6 * u, 1.1 * u, .7 * u, 0, 0, 7); ctx.fill();
+  // glasses arms
+  ctx.strokeStyle = '#111'; ctx.lineWidth = .3 * u;
+  ctx.beginPath(); ctx.moveTo(-2.45 * u, -18 * u); ctx.lineTo(-1.6 * u, -18.3 * u); ctx.moveTo(2.45 * u, -18 * u); ctx.lineTo(1.6 * u, -18.3 * u); ctx.stroke();
+  // pencil behind ear
+  ctx.save(); ctx.translate(2.6 * u, -18.6 * u); ctx.rotate(-.9);
+  ctx.fillStyle = '#f2c14e'; ctx.fillRect(-.3 * u, -1.8 * u, .6 * u, 2.6 * u); ctx.fillStyle = '#e48a9a'; ctx.fillRect(-.3 * u, -2.2 * u, .6 * u, .5 * u);
+  ctx.restore();
+  ctx.restore();
+}
+
+/* ---------- Not-a-grams ---------- */
+function drawMonster(x, y, sz, kind, t, col) {
+  const bob = Math.abs(Math.sin(t * 11 + x)) * sz * .12;
+  ctx.save(); ctx.translate(x, y - bob);
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  // legs
+  ctx.strokeStyle = '#2a1838'; ctx.lineWidth = sz * .1;
+  for (const s of [-1, 1]) { const sw = Math.sin(t * 11 + s) * sz * .18; ctx.beginPath(); ctx.moveTo(s * sz * .3, 0); ctx.lineTo(s * sz * .35 + sw, sz * .45); ctx.stroke(); }
+  const shapes = {
+    trap: [[-.55, -1.15], [.55, -1.15], [1, 0], [-1, 0]],
+    kite: [[0, -1.45], [.75, -.75], [0, .1], [-.75, -.75]],
+    quad: [[-.8, -1.1], [.45, -1.25], [.95, .05], [-.65, 0]],
+  };
+  ctx.fillStyle = col; ctx.strokeStyle = '#2a1838'; ctx.lineWidth = sz * .07;
+  ctx.beginPath(); shapes[kind].forEach(([px, py], i) => i ? ctx.lineTo(px * sz, py * sz) : ctx.moveTo(px * sz, py * sz)); ctx.closePath(); ctx.fill(); ctx.stroke();
+  // face
+  const ey = kind === 'kite' ? -.75 : -.68;
+  for (const s of [-1, 1]) {
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * .27 * sz, ey * sz, .16 * sz, 0, 7); ctx.fill();
+    ctx.fillStyle = '#c0182b'; ctx.beginPath(); ctx.arc(s * .25 * sz, (ey + .03) * sz, .07 * sz, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#2a1838'; ctx.lineWidth = sz * .07; ctx.beginPath(); ctx.moveTo(s * .45 * sz, (ey - .22) * sz); ctx.lineTo(s * .1 * sz, (ey - .12) * sz); ctx.stroke();
+  }
+  ctx.fillStyle = '#2a1838'; ctx.beginPath(); ctx.ellipse(0, (ey + .32) * sz, .22 * sz, .1 * sz, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#fff'; for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(s * .14 * sz, (ey + .24) * sz); ctx.lineTo(s * .08 * sz, (ey + .34) * sz); ctx.lineTo(s * .02 * sz, (ey + .24) * sz); ctx.fill(); }
+  ctx.restore();
+}
+function drawChasers(a, near) {
+  if (a <= 0) return;
+  const sz = Math.min(W, H) * (near ? .16 : .11);
+  ctx.globalAlpha = clamp(a, 0, 1);
+  const by = H + sz * (near ? .1 : .35);
+  drawMonster(W / 2 - sz * 2.3, by, sz, 'trap', S.t, '#8e5bd1');
+  drawMonster(W / 2 + sz * 2.3, by + sz * .1, sz, 'kite', S.t + 1, '#4fbf76');
+  if (near) drawMonster(W / 2, by + sz * .4, sz * 1.1, 'quad', S.t + 2, '#e0884f');
+  ctx.globalAlpha = 1;
+}
+
+function render() {
+  drawSky();
+  drawGround();
+  // collect scenery + objects, painter's order
+  const items = [];
+  const sp = 5, k0 = Math.ceil((S.dist + 1.2) / sp), k1 = Math.floor((S.dist + ZFAR + 8) / sp);
+  for (let k = k0; k <= k1; k++) {
+    const z = k * sp - S.dist;
+    for (const side of [-1, 1]) {
+      const h = hash(k * 2 + (side > 0 ? 1 : 0));
+      if (k % 3 === 0) items.push({ z, f: () => drawPillar(side * (RW + 1.1), z, h > .6) });
+      else items.push({ z: z + .01, f: () => drawTree(side * (RW + 2.6 + h * 3), z, h) });
+      if (h > .55) items.push({ z: z - .5, f: () => drawBush(side * (RW + .9), z - .5) });
+    }
+  }
+  for (const o of S.objs) { const f = { coin: drawCoin, log: drawLog, block: drawBlock, vine: drawVine }[o.kind]; items.push({ z: o.z, f: () => f(o) }); }
+  if (S.gate) items.push({ z: S.gate.z, f: () => drawGate(S.gate.z) });
+  items.push({ z: PZ, f: drawRunner });
+  items.sort((a, b) => b.z - a.z);
+  for (const it of items) if (it.z > .9) it.f();
+  // speed lines during dash
+  if (S.rush && S.mode === 'play') {
+    ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2;
+    for (let i = 0; i < 14; i++) { const a = hash(i + Math.floor(S.t * 20)) * Math.PI * 2, r1 = Math.min(W, H) * (.35 + hash(i * 3 + Math.floor(S.t * 20)) * .2);
+      ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(a) * r1, HZ + Math.sin(a) * r1 * .7); ctx.lineTo(W / 2 + Math.cos(a) * r1 * 1.4, HZ + Math.sin(a) * r1 * .98); ctx.stroke(); }
+  }
+  const over = S.mode === 'over';
+  drawChasers(over ? 1 : S.chase / 2, over || S.lives <= 1);
+  if (S.flash) { ctx.fillStyle = `rgba(${S.flash.col},${clamp(S.flash.t, 0, .5) * .6})`; ctx.fillRect(0, 0, W, H); }
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now;
+  if (S.mode === 'play' && !S.paused) update(dt);
+  else if (S.mode === 'title') { S.t += dt; S.dist += 7 * dt; S.lane = Math.sin(S.t * .4) > .6 ? 1 : Math.sin(S.t * .4) < -.6 ? -1 : 0; S.px += (S.lane * LX - S.px) * Math.min(1, dt * 6); }
+  else if (S.mode === 'over' || S.mode === 'won') { S.t += dt; if (S.mode === 'won') S.dist += 5 * dt; }
+  render();
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================
+   UI
+   ========================================================= */
+function updateHud() {
+  $('hearts').textContent = S.practice ? '❤️ ∞' : ('❤️'.repeat(Math.max(0, S.lives)) + '🖤'.repeat(Math.max(0, 3 - S.lives)));
+  $('gateNum').textContent = `GATE ${Math.min(S.qi + 1, S.qList.length)}/${S.qList.length}`;
+  $('coinCt').textContent = S.coins; $('scoreCt').textContent = S.score;
+}
+let toastTimer = null;
+function toast(html, ms = 2500, good = true) {
+  const t = $('toast'); t.innerHTML = html; t.classList.remove('hidden');
+  t.style.borderColor = good ? 'var(--yes-2)' : 'var(--no-2)';
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), ms);
+}
+function showCard() {
+  const q = S.cur;
+  $('qnum').textContent = `GATE ${S.qi + 1} / ${S.qList.length}`;
+  drawDiagram($('qdiag'), q);
+  $('hintText').classList.add('hidden'); $('hintText').innerHTML = '<span style="font-weight:400">Given:</span> ' + fmt(q.given);
+  $('hintBtn').classList.remove('hidden');
+  ['btnYes', 'btnNo'].forEach(id => $(id).classList.remove('picked', 'dim'));
+  $('timerFill').style.transform = 'scaleX(1)';
+  $('qcard').classList.remove('hidden');
+  $('toast').classList.add('hidden');
+  updateHud();
+}
+function hideCard() { $('qcard').classList.add('hidden'); }
+function useHint() {
+  if (S.phase !== 'question' || S.paused) return;
+  S.hintUsed = true; $('hintText').classList.remove('hidden'); $('hintBtn').classList.add('hidden');
+}
+function showFeedback(q, ans) {
+  S.paused = true;
+  $('fbTitle').textContent = ans === 0 ? 'Bonk! You hit the pillar!' : 'Not quite, Professor!';
+  const right = q.ok ? '<span style="color:var(--yes)">PARALLELOGRAM (it is proven)</span>' : '<span style="color:var(--no)">NOT ENOUGH INFO</span>';
+  $('fbAnswer').innerHTML = (ans === 0 ? 'You didn\'t pick an arch in time. ' : '') + 'The correct arch was: ' + right;
+  drawDiagram($('fbDiag'), q);
+  $('fbWhy').innerHTML = fmt(q.why); $('fbWhy').className = 'fbbox' + (q.ok ? ' good' : '');
+  $('fbGiven').innerHTML = fmt(q.given);
+  const dead = !S.practice && S.lives <= 0, done = S.qi >= S.qList.length;
+  $('fbBtn').textContent = dead ? 'See Results…' : done ? 'Finish ▶' : 'Keep Running ▶';
+  $('fbScr').classList.remove('hidden');
+  setTimeout(() => $('fbBtn').focus(), 50);
+}
+function closeFeedback() {
+  $('fbScr').classList.add('hidden'); S.paused = false;
+  if (!S.practice && S.lives <= 0) { finish(false); return; }
+  if (S.qi >= S.qList.length) { finish(true); return; }
+  startRun(false);
+}
+function setPause(p) {
+  if (S.mode !== 'play' || !$('fbScr').classList.contains('hidden')) return;
+  S.paused = p; $('pauseScr').classList.toggle('hidden', !p);
+  // hide the card while paused so the clock can't be dodged
+  if (S.phase === 'question') $('qcard').classList.toggle('hidden', p);
+}
+function finish(won) {
+  S.mode = won ? 'won' : 'over'; hideCard();
+  $('hud').classList.add('hidden'); $('touchpad').classList.remove('on'); $('toast').classList.add('hidden');
+  const R = S.results, nC = R.filter(r => r.correct).length;
+  $('resTitle').textContent = won ? '🏆 You escaped the Temple of Euclid!' : '😱 The Not‑a‑grams caught you!';
+  const mins = Math.round((performance.now() - S.startT) / 60000 * 10) / 10;
+  $('resSub').innerHTML = `${S.name ? `<b>${S.name.replace(/[<>&]/g, '')}</b> · ` : ''}${{ study: '🐢 Study', run: '🏃 Run', sprint: '⚡ Sprint' }[S.diffKey]} pace${S.practice ? ' · Practice mode' : ''} · ${new Date().toLocaleString()}`;
+  const pct = R.length ? Math.round(nC / R.length * 100) : 0;
+  $('resStats').innerHTML = [
+    [`${nC}/${R.length}`, 'gates correct'], [pct + '%', 'accuracy'], [S.score, 'score'], [S.bestStreak, 'best streak'],
+    [S.coins, 'coins'], [`${S.qi}/${S.qList.length}`, 'gates reached'], [mins + ' min', 'run time'],
+  ].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('');
+  // breakdown by idea
+  const rows = new Map();
+  for (const r of R) { const k = r.q.cat; if (!rows.has(k)) rows.set(k, { ok: r.q.ok, c: 0, n: 0 }); const e = rows.get(k); e.n++; if (r.correct) e.c++; }
+  const sorted = [...rows.entries()].sort((a, b) => (b[1].ok - a[1].ok));
+  $('resTable').innerHTML = sorted.map(([k, e]) => `<tr><td>${k}</td><td><span class="tag ${e.ok ? 'yes' : 'no'}">${e.ok ? 'Parallelogram' : 'Not enough'}</span></td><td class="n">${e.c === e.n ? '✅' : e.c === 0 ? '❌' : '⚠️'} ${e.c}/${e.n}</td></tr>`).join('') || '<tr><td colspan="3">No gates reached.</td></tr>';
+  const missed = R.filter(r => !r.correct);
+  $('missHead').textContent = missed.length ? `Review your missed gates (${missed.length})` : 'No missed gates. Perfect run! 🎉';
+  const ml = $('missList'); ml.innerHTML = '';
+  for (const r of missed) {
+    const d = document.createElement('div'); d.className = 'miss';
+    const c = document.createElement('canvas'); d.appendChild(c);
+    const tx = document.createElement('div');
+    tx.innerHTML = `<b>Given:</b> ${fmt(r.q.given)}<br><b>You chose:</b> ${r.ans === -1 ? 'Parallelogram' : r.ans === 1 ? 'Not enough info' : 'no arch (hit the pillar)'} · <b>Answer:</b> ${r.q.ok ? 'Parallelogram' : 'Not enough info'}<div style="margin-top:4px">${fmt(r.q.why)}</div>`;
+    d.appendChild(tx); ml.appendChild(d); drawDiagram(c, r.q);
+  }
+  $('resScr').classList.remove('hidden'); $('resScr').scrollTop = 0;
+}
+function toTitle() {
+  S.mode = 'title'; S.paused = false; S.objs = []; S.gate = null; S.chase = 0; S.flash = null; S.rush = false;
+  ['resScr', 'pauseScr', 'fbScr', 'guideScr'].forEach(id => $(id).classList.add('hidden'));
+  $('hud').classList.add('hidden'); hideCard(); $('toast').classList.add('hidden'); $('touchpad').classList.remove('on');
+  $('titleScr').classList.remove('hidden');
+}
+
+/* Guide */
+function buildGuide() {
+  const yes = [
+    ['y-par', 0, 'Both pairs of opposite sides are parallel', 'This is the definition of a parallelogram.'],
+    ['y-cong', 0, 'Both pairs of opposite sides are congruent', 'Matching tick marks on opposite sides.'],
+    ['y-ang', 0, 'Both pairs of opposite angles are congruent', 'Matching arcs on opposite angles.'],
+    ['y-supp', 0, 'One angle is supplementary to both consecutive angles', 'It adds to 180° with each angle next to it.'],
+    ['y-diag', 0, 'The diagonals bisect each other', 'E is the midpoint of both diagonals.'],
+    ['y-one', 0, 'One pair of opposite sides is both congruent and parallel', 'It must be the same pair!'],
+  ];
+  const no = [
+    ['n-isotrap', 0, 'One pair parallel and the OTHER pair congruent', 'Isosceles trapezoid!'],
+    ['n-kite', 0, 'Consecutive sides congruent', 'Kite! Congruent sides must be opposite.'],
+    ['n-onediag', 0, 'Only one diagonal is bisected', 'Kite! The diagonals must bisect each other.'],
+    ['n-onepar', 0, 'Only one pair of sides is parallel', 'Trapezoid!'],
+    ['n-consang', 0, 'Consecutive angles congruent', 'Isosceles trapezoid! Angles must be opposite.'],
+    ['n-supp1', 0, 'Supplementary to only one neighbor', 'Trapezoid! It must work with both neighbors.'],
+  ];
+  const fill = (el, list, cls) => {
+    el.innerHTML = '';
+    for (const [id, v, title, desc] of list) {
+      const t = TEMPLATES.find(x => x.id === id); let q = t.make(v);
+      if (id === 'n-onepar') q.sh = trapShape(); if (id === 'n-onediag') q.sh = kiteShape(); if (id === 'n-isotrap') q.sh = isoTrapShape();
+      const d = document.createElement('div'); d.className = 'gcard ' + cls;
+      const c = document.createElement('canvas'); d.appendChild(c);
+      d.insertAdjacentHTML('beforeend', `<div class="gt">${title}</div><div class="gd">${desc} <i>(${fmt(q.given)})</i></div>`);
+      el.appendChild(d); drawDiagram(c, q);
+    }
+  };
+  fill($('guideYes'), yes, ''); fill($('guideNo'), no, 'trap');
+}
+
+/* Title portrait: Professor Protractor, front view */
+function drawPortrait() {
+  const c = $('portrait').getContext('2d'), w = 210, h = 250, dpr = Math.min(3, (window.devicePixelRatio || 1) * 1.5);
+  $('portrait').width = w * dpr; $('portrait').height = h * dpr; c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#f6d69a'); g.addColorStop(1, '#e8b86a');
+  c.fillStyle = g; c.beginPath(); c.roundRect ? c.roundRect(0, 0, w, h, 16) : c.rect(0, 0, w, h); c.fill();
+  // chalkboard bits
+  c.fillStyle = '#2f4f3a'; c.fillRect(10, 12, 190, 70); c.strokeStyle = '#7a5130'; c.lineWidth = 4; c.strokeRect(10, 12, 190, 70);
+  c.strokeStyle = '#f4f1e1'; c.lineWidth = 2; c.beginPath(); c.moveTo(30, 65); c.lineTo(80, 65); c.lineTo(95, 30); c.lineTo(45, 30); c.closePath(); c.stroke();
+  c.beginPath(); c.moveTo(52, 26); c.lineTo(58, 30); c.lineTo(52, 34); c.moveTo(70, 61); c.lineTo(76, 65); c.lineTo(70, 69); c.stroke();
+  c.fillStyle = '#f4f1e1'; c.font = '700 13px Nunito'; c.fillText('AB ∥ DC', 115, 40); c.fillText('AD ∥ BC ✓', 115, 62);
+  const cx = 105;
+  // body
+  c.fillStyle = '#a9cdee'; c.beginPath(); c.moveTo(cx - 62, h); c.quadraticCurveTo(cx - 60, 175, cx - 30, 165); c.lineTo(cx + 30, 165); c.quadraticCurveTo(cx + 60, 175, cx + 62, h); c.fill();
+  c.fillStyle = '#7b2d3b'; c.beginPath(); c.moveTo(cx - 44, h); c.lineTo(cx - 36, 172); c.lineTo(cx - 10, 168); c.lineTo(cx, 195); c.lineTo(cx + 10, 168); c.lineTo(cx + 36, 172); c.lineTo(cx + 44, h); c.fill();
+  // vest emblem
+  c.fillStyle = '#f2c14e'; c.beginPath(); c.moveTo(cx + 18, 212); c.lineTo(cx + 36, 212); c.lineTo(cx + 32, 222); c.lineTo(cx + 14, 222); c.closePath(); c.fill();
+  // tie
+  c.fillStyle = '#c0392b'; c.beginPath(); c.moveTo(cx - 5, 168); c.lineTo(cx + 5, 168); c.lineTo(cx + 3, 175); c.lineTo(cx + 8, 205); c.lineTo(cx, 214); c.lineTo(cx - 8, 205); c.lineTo(cx - 3, 175); c.closePath(); c.fill();
+  c.fillStyle = '#f2c14e'; c.fillRect(cx - 3, 188, 6, 2);
+  // collar
+  c.fillStyle = '#e8f2fb'; c.beginPath(); c.moveTo(cx - 18, 160); c.lineTo(cx - 3, 170); c.lineTo(cx - 14, 176); c.closePath(); c.fill(); c.beginPath(); c.moveTo(cx + 18, 160); c.lineTo(cx + 3, 170); c.lineTo(cx + 14, 176); c.closePath(); c.fill();
+  // neck/head
+  c.fillStyle = '#e8b48c'; c.fillRect(cx - 10, 145, 20, 20);
+  c.beginPath(); c.ellipse(cx, 126, 30, 34, 0, 0, 7); c.fill();
+  c.beginPath(); c.ellipse(cx - 30, 128, 6, 9, 0, 0, 7); c.ellipse(cx + 30, 128, 6, 9, 0, 0, 7); c.fill();
+  // hair: side tufts and a shiny top
+  c.fillStyle = '#6b4226';
+  for (const s of [-1, 1]) { c.beginPath(); c.ellipse(cx + s * 27, 108, 9, 16, s * .3, 0, 7); c.fill(); for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(cx + s * (22 + i * 4), 96 + i * 4, 6, 0, 7); c.fill(); } }
+  c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(cx - 8, 100, 10, 4, -.3, 0, 7); c.fill();
+  // glasses
+  c.strokeStyle = '#1b1b1b'; c.lineWidth = 2.5; c.fillStyle = 'rgba(200,230,255,.35)';
+  for (const s of [-1, 1]) { c.beginPath(); c.arc(cx + s * 13, 124, 10, 0, 7); c.fill(); c.stroke(); }
+  c.beginPath(); c.moveTo(cx - 3, 123); c.lineTo(cx + 3, 123); c.moveTo(cx - 23, 122); c.lineTo(cx - 30, 120); c.moveTo(cx + 23, 122); c.lineTo(cx + 30, 120); c.stroke();
+  c.fillStyle = '#1b1b1b'; c.beginPath(); c.arc(cx - 12, 125, 2.6, 0, 7); c.arc(cx + 14, 125, 2.6, 0, 7); c.fill();
+  // brows, mustache, smile
+  c.strokeStyle = '#4a2c16'; c.lineWidth = 3; c.beginPath(); c.moveTo(cx - 21, 110); c.lineTo(cx - 6, 108); c.moveTo(cx + 6, 107); c.lineTo(cx + 21, 109); c.stroke();
+  c.fillStyle = '#6b4226'; c.beginPath(); c.ellipse(cx - 7, 142, 9, 4, .2, 0, 7); c.ellipse(cx + 7, 142, 9, 4, -.2, 0, 7); c.fill();
+  c.strokeStyle = '#7a2b12'; c.lineWidth = 2.2; c.beginPath(); c.arc(cx, 145, 8, .25, Math.PI - .25); c.stroke();
+  // pencil behind ear
+  c.save(); c.translate(cx + 32, 112); c.rotate(.5); c.fillStyle = '#f2c14e'; c.fillRect(-3, -14, 6, 24); c.fillStyle = '#e48a9a'; c.fillRect(-3, -18, 6, 5); c.fillStyle = '#e8b48c'; c.beginPath(); c.moveTo(-3, 10); c.lineTo(3, 10); c.lineTo(0, 16); c.fill(); c.restore();
+  // raised hand with protractor
+  c.fillStyle = '#a9cdee'; c.beginPath(); c.moveTo(cx + 45, 180); c.lineTo(cx + 70, 140); c.lineTo(cx + 82, 146); c.lineTo(cx + 60, 190); c.fill();
+  c.fillStyle = '#e8b48c'; c.beginPath(); c.arc(cx + 76, 136, 8, 0, 7); c.fill();
+  c.fillStyle = 'rgba(250,226,120,.92)'; c.strokeStyle = '#b08a1e'; c.lineWidth = 1.5;
+  c.beginPath(); c.arc(cx + 76, 130, 26, Math.PI, 0); c.closePath(); c.fill(); c.stroke();
+  for (let a = 0; a <= 12; a++) { const an = Math.PI + a * Math.PI / 12; c.beginPath(); c.moveTo(cx + 76 + Math.cos(an) * 21, 130 + Math.sin(an) * 21); c.lineTo(cx + 76 + Math.cos(an) * 26, 130 + Math.sin(an) * 26); c.stroke(); }
+  c.fillStyle = '#5b3a1e'; c.beginPath(); c.roundRect ? c.roundRect(cx - 62, h - 30, 124, 22, 8) : c.rect(cx - 62, h - 30, 124, 22); c.fill();
+  c.fillStyle = '#f2c14e'; c.font = '900 13px Nunito'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('Prof. Protractor', cx, h - 19);
+}
+
+/* =========================================================
+   Input
+   ========================================================= */
+function act(a) {
+  if (S.mode !== 'play' || S.paused) return;
+  if (a === 'left') { if (S.phase === 'question') choose(-1); else S.lane = Math.max(-1, S.lane - 1); }
+  else if (a === 'right') { if (S.phase === 'question') choose(1); else S.lane = Math.min(1, S.lane + 1); }
+  else if (a === 'jump') { if (S.py === 0 && S.slideT <= 0) { S.vy = 8.2; S.py = .001; sfx.jump(); } }
+  else if (a === 'slide') { if (S.py > 0) S.vy = -12; S.slideT = .8; sfx.slide(); }
+}
+addEventListener('keydown', e => {
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input') { if (e.key === 'Enter' && S.mode === 'title') newGame(); return; }
+  const k = e.key.toLowerCase();
+  if (!$('fbScr').classList.contains('hidden')) { if (k === 'enter' || k === ' ') { e.preventDefault(); closeFeedback(); } return; }
+  if (S.mode === 'title' && k === 'enter' && $('guideScr').classList.contains('hidden')) { newGame(); return; }
+  if (k === 'm') { toggleMute(); return; }
+  if (S.mode !== 'play') return;
+  if (k === 'p' || k === 'escape') { setPause(!S.paused); return; }
+  if (S.paused) return;
+  const map = { arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right', arrowup: 'jump', w: 'jump', ' ': 'jump', arrowdown: 'slide', s: 'slide' };
+  if (map[k]) { e.preventDefault(); act(map[k]); }
+  else if (k === 'y' && S.phase === 'question') choose(-1);
+  else if (k === 'n' && S.phase === 'question') choose(1);
+  else if (k === 'h') useHint();
+});
+// swipe
+let touch0 = null;
+addEventListener('touchstart', e => { if (e.target.closest('button,input,label,.overlay,#qcard')) return; const t = e.touches[0]; touch0 = { x: t.clientX, y: t.clientY }; }, { passive: true });
+addEventListener('touchend', e => {
+  if (!touch0) return; const t = e.changedTouches[0], dx = t.clientX - touch0.x, dy = t.clientY - touch0.y; touch0 = null;
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < 28) return;
+  if (Math.abs(dx) > Math.abs(dy)) act(dx < 0 ? 'left' : 'right'); else act(dy < 0 ? 'jump' : 'slide');
+}, { passive: true });
+$('tpJump').onclick = () => act('jump'); $('tpSlide').onclick = () => act('slide');
+$('btnYes').onclick = () => choose(-1); $('btnNo').onclick = () => choose(1);
+$('hintBtn').onclick = useHint;
+$('startBtn').onclick = newGame;
+$('guideBtn').onclick = () => { buildGuide(); $('titleScr').classList.add('hidden'); $('guideScr').classList.remove('hidden'); $('guideScr').scrollTop = 0; };
+$('guideClose').onclick = () => { $('guideScr').classList.add('hidden'); $('titleScr').classList.remove('hidden'); };
+$('fbBtn').onclick = closeFeedback;
+$('pauseBtn').onclick = () => setPause(true);
+$('resumeBtn').onclick = () => setPause(false);
+$('quitBtn').onclick = toTitle;
+$('againBtn').onclick = newGame;
+$('menuBtn').onclick = toTitle;
+$('printBtn').onclick = () => window.print();
+function toggleMute() { muted = !muted; $('muteBtn').textContent = muted ? '🔇' : '🔊'; }
+$('muteBtn').onclick = toggleMute;
+document.addEventListener('visibilitychange', () => { if (document.hidden && S.mode === 'play' && !S.paused) setPause(true); });
+
+drawPortrait();
+if (document.fonts) document.fonts.ready.then(drawPortrait);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
