@@ -421,11 +421,11 @@ const TEMPLATES = [
 
   // ---------- NOT ENOUGH ----------
   { id: 'n-onepar', ok: false, vars: [1], cat: 'Only one pair of opposite sides parallel', make() {
-    return { sh: chance(.5) ? trapShape() : paraShape(), marks: [par(0, 1, 1), par(3, 2, 1)],
+    return { sh: trapShape(), marks: [par(0, 1, 1), par(3, 2, 1)],
       given: '[AB] ∥ [DC]', short: 'Only one pair of sides is parallel. It could be a trapezoid.',
       why: 'Only <b>one</b> pair of opposite sides is marked parallel. A <b>trapezoid</b> also has exactly that, so it is not proven. You need both pairs parallel (or that same pair also congruent).' }; } },
   { id: 'n-isotrap', ok: false, vars: [1, 2], cat: 'One pair parallel, the OTHER pair congruent', make(v) {
-    v = v ?? ri(0, 1); const sh = chance(.55) ? isoTrapShape() : paraShape();
+    v = v ?? ri(0, 1); const sh = isoTrapShape();
     if (v === 1) { const n = ri(5, 12);
       return { sh, marks: [par(0, 1, 1), par(3, 2, 1), len(0, 3, n), len(1, 2, n)],
         given: `[AB] ∥ [DC] and AD = BC = ${n}`, short: 'The parallel pair and the congruent pair are different. It could be an isosceles trapezoid.',
@@ -434,7 +434,7 @@ const TEMPLATES = [
       given: '[AB] ∥ [DC] and [AD] ≅ [BC]', short: 'The parallel pair and the congruent pair are different. It could be an isosceles trapezoid.',
       why: 'The arrows are on [AB] & [DC], but the ticks are on [AD] & [BC], a <b>different pair</b>. An <b>isosceles trapezoid</b> fits these marks exactly. For this test the parallel pair and the congruent pair must be the <b>same</b> pair.' }; } },
   { id: 'n-onecong', ok: false, vars: [1], cat: 'Only one pair of opposite sides congruent', make() {
-    return { sh: chance(.5) ? isoTrapShape() : paraShape(), marks: [tk(0, 3, 1), tk(1, 2, 1)],
+    return { sh: isoTrapShape(), marks: [tk(0, 3, 1), tk(1, 2, 1)],
       given: '[AD] ≅ [BC]', short: 'Only one pair of opposite sides is congruent. It could be an isosceles trapezoid.',
       why: 'Only <b>one</b> pair of opposite sides is marked congruent. An <b>isosceles trapezoid</b> has that too. You need <b>both</b> pairs congruent.' }; } },
   { id: 'n-kite', ok: false, vars: [1, 2], cat: 'Two pairs of CONSECUTIVE sides congruent', make(v) {
@@ -447,7 +447,7 @@ const TEMPLATES = [
       given: '[AB] ≅ [AD] and [CB] ≅ [CD]', short: 'The congruent sides are consecutive, not opposite. It\'s a kite.',
       why: 'The matching ticks are on <b>consecutive</b> sides ([AB] & [AD], [CB] & [CD]), which share a vertex. Opposite sides are not marked congruent. This is a <b>kite</b>.' }; } },
   { id: 'n-oneang', ok: false, vars: [2], cat: 'Only one pair of opposite angles congruent', make() {
-    return { sh: chance(.6) ? kiteShape() : paraShape(), marks: [arcM(1, 1), arcM(3, 1)],
+    return { sh: kiteShape(), marks: [arcM(1, 1), arcM(3, 1)],
       given: '∠B ≅ ∠D', short: 'Only one pair of opposite angles is congruent. It could be a kite.',
       why: 'Only <b>one</b> pair of opposite angles (∠B and ∠D) is marked congruent. A <b>kite</b> has one pair of congruent opposite angles too. You need <b>both</b> pairs.' }; } },
   { id: 'n-consang', ok: false, vars: [2], cat: 'CONSECUTIVE angles congruent', make() {
@@ -467,7 +467,7 @@ const TEMPLATES = [
       given: `m∠A = ${a[0]}°, m∠B = ${a[1]}°, m∠C = ${a[2]}°, m∠D = ${a[3]}°`, short: 'Opposite angles are not congruent. It\'s a trapezoid.',
       why: `∠A + ∠D = 180°, but ∠A + ∠B = ${a[0] + a[1]}°. No angle is supplementary to <b>both</b> of its neighbors, and the opposite angles (${a[0]}° vs ${a[2]}°) are not congruent. This is a <b>trapezoid</b>.` }; } },
   { id: 'n-onediag', ok: false, vars: [2], cat: 'Only ONE diagonal bisected', make() {
-    return { sh: chance(.6) ? kiteShape() : paraShape(), marks: [DIAG, dtk(1, 1), dtk(3, 1)],
+    return { sh: kiteShape(), marks: [DIAG, dtk(1, 1), dtk(3, 1)],
       given: '[BE] ≅ [ED]', short: 'Only one diagonal is bisected. It could be a kite.',
       why: 'Only [BD] is marked as bisected (BE = ED). Nothing says AE = EC. The diagonals must bisect <b>each other</b>. In a <b>kite</b>, one diagonal bisects the other, but not the other way around.' }; } },
   { id: 'n-diagnum', ok: false, vars: [3], cat: 'Only ONE diagonal bisected', make() {
@@ -558,8 +558,16 @@ function variantFor(t) {
   return pick(av)[1];
 }
 // Returns a function that makes the next question; bags make sure every idea comes up before any repeats.
+// Look-alike shapes that still fit each non-example's marks (default: a plain parallelogram)
+const DISGUISE = { 'n-kite': rhombusShape, 'n-perp': rhombusShape, 'n-consang': rectShape, 'n-diagcong': rectShape };
+function disguise(q) {
+  q.marks.forEach(m => { if (m.t === 'ang') m.val = interior(q.sh.pts, m.v); });
+  q.sh = (DISGUISE[q.id] || paraShape)(); q.disguised = true;
+  q.why += ' <i>The picture looks like a parallelogram, but the marks don\'t prove it. Diagrams aren\'t drawn to scale!</i>';
+  return q;
+}
 function makeGen() {
-  const bags = { yes: [], no: [], missing: [] }; let last = null;
+  const bags = { yes: [], no: [], missing: [] }; let last = null, dbag = [];
   const pool = k => k === 'missing' ? MISSING_T : (k === 'yes' ? YES_T : NO_T).filter(t => Math.min(...t.vars) <= PLEVEL);
   return k => {
     if (k === 'missing') { if (!bags.missing.length) bags.missing = shuffle(MISSING_T.slice()); ROTK = PLEVEL === 3 ? 2.2 : PLEVEL === 1 ? .6 : 1; return makeMissing(bags.missing.pop()); }
@@ -567,7 +575,9 @@ function makeGen() {
     let i = bags[k].length - 1; if (bags[k][i] === last && i > 0) i--;
     const t = bags[k].splice(i, 1)[0]; last = t;
     ROTK = PLEVEL === 3 ? 2.2 : PLEVEL === 1 ? .6 : 1;
-    return Object.assign({ tpl: t, ok: t.ok, cat: t.cat, id: t.id, kind: 'yn', answer: t.ok ? -1 : 1 }, t.make(variantFor(t)));
+    const q = Object.assign({ tpl: t, ok: t.ok, cat: t.cat, id: t.id, kind: 'yn', answer: t.ok ? -1 : 1 }, t.make(variantFor(t)));
+    if (!t.ok) { if (!dbag.length) dbag = shuffle([true, false]); if (dbag.pop()) disguise(q); }
+    return q;
   };
 }
 
@@ -649,7 +659,7 @@ function drawDiagram(cvs, q, W = 400, H = 250) {
         const s = 13; c.strokeStyle = MARKCOL[1]; c.lineWidth = 2.2;
         c.beginPath(); c.moveTo(V[0] + u1[0] * s, V[1] + u1[1] * s); c.lineTo(V[0] + (u1[0] + u2[0]) * s, V[1] + (u1[1] + u2[1]) * s); c.lineTo(V[0] + u2[0] * s, V[1] + u2[1] * s); c.stroke();
       } else {
-        const val = interior(q.sh.pts, m.v); const bis = unit([u1[0] + u2[0], u1[1] + u2[1]]);
+        const val = m.val ?? interior(q.sh.pts, m.v); const bis = unit([u1[0] + u2[0], u1[1] + u2[1]]);
         c.strokeStyle = '#7a5130'; c.lineWidth = 1.6; const a1 = Math.atan2(u1[1], u1[0]), a2 = Math.atan2(u2[1], u2[0]);
         let df = a2 - a1; while (df > Math.PI) df -= 2 * Math.PI; while (df < -Math.PI) df += 2 * Math.PI;
         c.beginPath(); c.arc(V[0], V[1], 14, a1, a1 + df, df < 0); c.stroke();

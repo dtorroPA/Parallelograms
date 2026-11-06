@@ -21,7 +21,7 @@ Only one pair of sides parallel (trapezoid) · one pair parallel and the *other*
 ## "What's missing?" gates
 Some gates show partial marks, such as only AB ∥ DC, and ask what **additional information** would prove ABCD is a parallelogram. The two arches become **Option A** and **Option B**. One option completes a proof, and the other is a common trap. For example, AB ≅ DC works, but AD ≅ BC could give an isosceles trapezoid. Feedback redraws the diagram with the missing marks added and explains why the trap fails. The topics are a parallel pair, a congruent pair, opposite angles, one bisected diagonal, supplementary consecutive angles, and isosceles-trapezoid marks.
 
-Diagrams are randomly generated each time, so no two runs are the same. Non-examples are often drawn to *look* like parallelograms, which teaches students to trust the marks and not the picture.
+Diagrams are randomly generated each time, so no two runs are the same. Exactly half of the non-examples are drawn to *look* like parallelograms, using a parallelogram, rhombus, or rectangle that still fits the marks. The other half are drawn as their real counterexample shape, such as a trapezoid or kite. This teaches students to trust the marks and not the picture, and the feedback points it out when the picture was misleading.
 
 ## Classroom options
 On the title screen, pick a **mode** and a **quick preset** (Study, Run, or Sprint), or open **Customize** to set each option yourself. The game remembers your choices on that device.
