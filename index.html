@@ -83,6 +83,14 @@ input[type=text] { font: inherit; padding: 8px 10px; border-radius: 10px; border
 .seg-ctl input:checked + label { background: var(--wood); color: #fff4d6; }
 .seg-ctl input:focus-visible + label { outline: 3px solid var(--gold); }
 .check { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 14px; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets button { border: 2px solid var(--wood-2); border-radius: 10px; padding: 6px 12px; background: #fffaf0; font-weight: 900; font-size: 14px; color: var(--ink); }
+.presets button.active { background: var(--gold); border-color: var(--wood); }
+details.cust { margin-top: 8px; background: #fff8e3; border: 2px solid var(--wood-2); border-radius: 12px; padding: 6px 10px; }
+details.cust summary { cursor: pointer; font-weight: 900; font-size: 14px; }
+.settings { display: grid; grid-template-columns: max-content 1fr; gap: 8px 12px; align-items: center; margin: 8px 0 4px; }
+.settings .lbl2 { font-weight: 900; font-size: 13px; }
+.settings .seg-ctl label { padding: 4px 9px; font-size: 13px; }
 .btnrow { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 .bigbtn { font-family: var(--display); font-size: 22px; letter-spacing: 1px; padding: 10px 20px; border-radius: 14px; border: 3px solid var(--wood); background: var(--gold); color: var(--wood); box-shadow: 0 5px 0 var(--wood); }
 .bigbtn.alt { background: #fffaf0; font-size: 18px; }
@@ -126,6 +134,8 @@ table.brk td.n { text-align: center; white-space: nowrap; font-weight: 900; }
 @keyframes slidein { from { transform: translateX(-40px); opacity: 0; } to { transform: none; opacity: 1; } }
 @media (max-width: 620px) {
   .titlegrid { grid-template-columns: 1fr; }
+  .settings { grid-template-columns: 1fr; gap: 4px; }
+  .settings .lbl2 { margin-top: 4px; }
   #portrait { margin: 0 auto; width: 160px; height: 190px; }
   .miss { grid-template-columns: 1fr; }
   .miss canvas { width: 100%; }
@@ -196,24 +206,19 @@ table.brk td.n { text-align: center; white-space: nowrap; font-weight: 900; }
             <li><b style="color:var(--yes)">LEFT arch: PARALLELOGRAM!</b> The marks are enough to <i>prove</i> it.</li>
             <li><b style="color:var(--no)">RIGHT arch: NOT ENOUGH INFO.</b> It <i>might</i> be one, but it isn't proven.</li>
           </ul>
-          <kbd>←</kbd>/<kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> pick an arch (or switch lanes) · <kbd>↑</kbd>/<kbd>Space</kbd> jump · <kbd>↓</kbd> slide · <kbd>P</kbd> pause. On a phone or tablet, swipe or tap the buttons. Wrong arches cost a ❤️. Lose all 3 and the Not‑a‑grams catch you!
+          <kbd>←</kbd>/<kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> pick an arch (or switch lanes) · <kbd>↑</kbd>/<kbd>Space</kbd> jump · <kbd>↓</kbd> slide · <kbd>P</kbd> pause. On a phone or tablet, swipe or tap the buttons. Between gates, <b>jump</b> rubble and logs, <b>slide</b> under vines and rulers, and <b>dodge</b> pillars and flying protractors. Wrong arches cost a ❤️. Lose them all and the Not‑a‑grams catch you!
         </div>
         <div class="field"><label class="lbl" for="nameIn">Runner name (shown on your results)</label><input type="text" id="nameIn" maxlength="30" placeholder="First & last name" autocomplete="off"></div>
-        <div class="field"><span class="lbl" style="font-weight:900;font-size:14px">Pace</span>
-          <div class="seg-ctl" role="radiogroup" aria-label="Pace">
-            <input type="radio" name="diff" id="d-study" value="study"><label for="d-study">🐢 Study<small>slow, no obstacles</small></label>
-            <input type="radio" name="diff" id="d-run" value="run" checked><label for="d-run">🏃 Run<small>normal</small></label>
-            <input type="radio" name="diff" id="d-sprint" value="sprint"><label for="d-sprint">⚡ Sprint<small>fast decisions</small></label>
+        <div class="field"><span class="lbl" style="font-weight:900;font-size:14px">Mode</span><div class="seg-ctl" id="set-mode" aria-label="Mode"></div></div>
+        <div class="field" id="gatesField"><span class="lbl" style="font-weight:900;font-size:14px">Number of gates</span><div class="seg-ctl" id="set-gates" aria-label="Number of gates"></div></div>
+        <div class="field"><span class="lbl" style="font-weight:900;font-size:14px">Quick presets</span>
+          <div class="presets">
+            <button type="button" data-preset="study">🐢 Study</button>
+            <button type="button" data-preset="run">🏃 Run</button>
+            <button type="button" data-preset="sprint">⚡ Sprint</button>
           </div>
         </div>
-        <div class="field"><span class="lbl" style="font-weight:900;font-size:14px">Number of gates</span>
-          <div class="seg-ctl" role="radiogroup" aria-label="Number of gates">
-            <input type="radio" name="len" id="l-10" value="10"><label for="l-10">10</label>
-            <input type="radio" name="len" id="l-16" value="16" checked><label for="l-16">16</label>
-            <input type="radio" name="len" id="l-24" value="24"><label for="l-24">24</label>
-          </div>
-        </div>
-        <label class="check"><input type="checkbox" id="practiceIn"> Practice mode: unlimited lives</label>
+        <details class="cust" id="custBox"><summary>⚙️ Customize problems, speed &amp; obstacles</summary><div class="settings" id="settingsGrid"></div></details>
         <div class="btnrow">
           <button class="bigbtn" id="startBtn">▶ Start Running</button>
           <button class="bigbtn alt" id="guideBtn">📜 Theorem Guide</button>
@@ -254,6 +259,7 @@ table.brk td.n { text-align: center; white-space: nowrap; font-weight: 900; }
     <p>Catch your breath, Professor.</p>
     <div class="btnrow" style="justify-content:center">
       <button class="bigbtn" id="resumeBtn">▶ Resume</button>
+      <button class="bigbtn alt" id="endBtn">End Run &amp; See Results</button>
       <button class="bigbtn alt" id="quitBtn">Quit to Menu</button>
     </div>
   </div>
@@ -300,15 +306,16 @@ const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x
    A top-left, B top-right, C bottom-right, D bottom-left.
    ========================================================= */
 // D = (0,0), C = (w,0); interior angle at D is aD, at C is bC; height h.
+let ROTK = 1, PLEVEL = 2; // rotation spread and problem difficulty for the current run
 function trapPts(aD, bC, w, h) {
   return [[h / Math.tan(aD * D2R), h], [w - h / Math.tan(bC * D2R), h], [w, 0], [0, 0]];
 }
-function paraShape() { const a = pick([55, 60, 65, 70, 75, 105, 110, 115, 120, 125]); return { pts: trapPts(a, 180 - a, ri(170, 210), ri(95, 125)), rot: rand(-.18, .18) }; }
-function rectShape() { return { pts: trapPts(90, 90, ri(190, 230), ri(100, 130)), rot: rand(-.15, .15) }; }
-function rhombusShape() { const a = pick([55, 60, 65, 115, 120, 125]), s = ri(140, 170); return { pts: trapPts(a, 180 - a, s, s * Math.sin(a * D2R)), rot: rand(-.15, .15) }; }
-function isoTrapShape() { const a = pick([55, 60, 65, 70]); return { pts: trapPts(a, a, ri(215, 245), ri(95, 115)), rot: rand(-.12, .12) }; }
-function trapShape() { const a = pick([60, 65, 70, 80, 95, 100]); let b = pick([50, 55, 60, 75]); if (a === b) b += 10; return { pts: trapPts(a, b, ri(215, 245), ri(95, 115)), rot: rand(-.12, .12) }; }
-function kiteShape() { const a = ri(40, 58), c = ri(100, 130), k = ri(62, 82); return { pts: [[0, a], [k, 0], [0, -c], [-k, 0]], rot: rand(-.2, .2) }; }
+function paraShape() { const a = pick([55, 60, 65, 70, 75, 105, 110, 115, 120, 125]); return { pts: trapPts(a, 180 - a, ri(170, 210), ri(95, 125)), rot: ROTK * rand(-.18, .18) }; }
+function rectShape() { return { pts: trapPts(90, 90, ri(190, 230), ri(100, 130)), rot: ROTK * rand(-.15, .15) }; }
+function rhombusShape() { const a = pick([55, 60, 65, 115, 120, 125]), s = ri(140, 170); return { pts: trapPts(a, 180 - a, s, s * Math.sin(a * D2R)), rot: ROTK * rand(-.15, .15) }; }
+function isoTrapShape() { const a = pick([55, 60, 65, 70]); return { pts: trapPts(a, a, ri(215, 245), ri(95, 115)), rot: ROTK * rand(-.12, .12) }; }
+function trapShape() { const a = pick([60, 65, 70, 80, 95, 100]); let b = pick([50, 55, 60, 75]); if (a === b) b += 10; return { pts: trapPts(a, b, ri(215, 245), ri(95, 115)), rot: ROTK * rand(-.12, .12) }; }
+function kiteShape() { const a = ri(40, 58), c = ri(100, 130), k = ri(62, 82); return { pts: [[0, a], [k, 0], [0, -c], [-k, 0]], rot: ROTK * rand(-.2, .2) }; }
 function generalShape() {
   for (let tries = 0; tries < 50; tries++) {
     const base = trapPts(70, 110, 200, 115);
@@ -321,7 +328,7 @@ function generalShape() {
     }
     // reject anything that accidentally looks like a parallelogram
     const dx1 = (pts[1][0] - pts[0][0]) - (pts[2][0] - pts[3][0]), dy1 = (pts[1][1] - pts[0][1]) - (pts[2][1] - pts[3][1]);
-    if (ok && Math.hypot(dx1, dy1) > 25) return { pts, rot: rand(-.1, .1) };
+    if (ok && Math.hypot(dx1, dy1) > 25) return { pts, rot: ROTK * rand(-.1, .1) };
   }
   return trapShape();
 }
@@ -349,12 +356,12 @@ const legend = txt => ({ t: 'legend', txt });
    ========================================================= */
 const TEMPLATES = [
   // ---------- SUFFICIENT ----------
-  { id: 'y-par', ok: true, cat: 'Both pairs of opposite sides parallel', make() {
+  { id: 'y-par', ok: true, vars: [1], cat: 'Both pairs of opposite sides parallel', make() {
     return { sh: paraShape(), marks: [par(0, 1, 1), par(3, 2, 1), par(0, 3, 2), par(1, 2, 2)],
       given: '[AB] ∥ [DC] and [AD] ∥ [BC]',
       short: 'Both pairs of opposite sides are parallel.',
       why: 'Both pairs of opposite sides are marked parallel: single arrows on [AB] & [DC], double arrows on [AD] & [BC]. That is the <b>definition</b> of a parallelogram.' }; } },
-  { id: 'y-cong', ok: true, cat: 'Both pairs of opposite sides congruent', make(v) {
+  { id: 'y-cong', ok: true, vars: [1, 2, 2], cat: 'Both pairs of opposite sides congruent', make(v) {
     v = v ?? ri(0, 2);
     if (v === 1) { const p = ri(9, 16), q = ri(4, p - 3);
       return { sh: paraShape(), marks: [len(0, 1, p), len(3, 2, p), len(0, 3, q), len(1, 2, q)],
@@ -366,7 +373,7 @@ const TEMPLATES = [
     return { sh: paraShape(), marks: [tk(0, 1, 1), tk(3, 2, 1), tk(0, 3, 2), tk(1, 2, 2)],
       given: '[AB] ≅ [DC] and [AD] ≅ [BC]', short: 'Both pairs of opposite sides are congruent.',
       why: 'The tick marks show [AB] ≅ [DC] (one tick) and [AD] ≅ [BC] (two ticks). <b>Both pairs of opposite sides are congruent</b>, so it is a parallelogram.' }; } },
-  { id: 'y-ang', ok: true, cat: 'Both pairs of opposite angles congruent', make(v) {
+  { id: 'y-ang', ok: true, vars: [1, 2, 1], cat: 'Both pairs of opposite angles congruent', make(v) {
     v = v ?? ri(0, 2);
     if (v === 1) { const sh = paraShape(); const a = [0, 1, 2, 3].map(i => interior(sh.pts, i));
       return { sh, marks: [angM(0), angM(1), angM(2), angM(3)],
@@ -378,14 +385,14 @@ const TEMPLATES = [
     return { sh: paraShape(), marks: [arcM(0, 1), arcM(2, 1), arcM(1, 2), arcM(3, 2)],
       given: '∠A ≅ ∠C and ∠B ≅ ∠D', short: 'Both pairs of opposite angles are congruent.',
       why: 'The arcs show ∠A ≅ ∠C (one arc) and ∠B ≅ ∠D (two arcs). <b>Both pairs of opposite angles are congruent</b>, so it is a parallelogram.' }; } },
-  { id: 'y-supp', ok: true, cat: 'One angle supplementary to both consecutive angles', make() {
+  { id: 'y-supp', ok: true, vars: [1], cat: 'One angle supplementary to both consecutive angles', make() {
     const sh = paraShape(); const h = ri(0, 3), p = (h + 3) % 4, n = (h + 1) % 4;
     const x = interior(sh.pts, h), y = interior(sh.pts, p);
     const H = LBL[h], P = LBL[p], N = LBL[n];
     return { sh, marks: [angM(h), angM(p), angM(n)],
       given: `m∠${H} = ${x}°, m∠${P} = ${y}°, m∠${N} = ${y}°`, short: `∠${H} is supplementary to both of its consecutive angles.`,
       why: `${x}° + ${y}° = 180°, so ∠${H} is supplementary to <b>both</b> consecutive angles, ∠${P} and ∠${N}. Same‑side interior angles are supplementary, so both pairs of opposite sides are parallel. Parallelogram!` }; } },
-  { id: 'y-diag', ok: true, cat: 'Diagonals bisect each other', make(v) {
+  { id: 'y-diag', ok: true, vars: [1, 2], cat: 'Diagonals bisect each other', make(v) {
     v = v ?? ri(0, 1);
     if (v === 1) { const a = ri(5, 12); let b = ri(3, 10); if (b === a) b++;
       return { sh: paraShape(), marks: [DIAG, dl(0, a), dl(2, a), dl(1, b), dl(3, b)],
@@ -394,7 +401,7 @@ const TEMPLATES = [
     return { sh: paraShape(), marks: [DIAG, dtk(0, 1), dtk(2, 1), dtk(1, 2), dtk(3, 2)],
       given: '[AE] ≅ [EC] and [BE] ≅ [ED]', short: 'The diagonals bisect each other.',
       why: '[AE] ≅ [EC] and [BE] ≅ [ED], so E is the midpoint of <b>both</b> diagonals. The diagonals bisect each other, so it is a parallelogram.' }; } },
-  { id: 'y-one', ok: true, cat: 'One pair of opposite sides both congruent and parallel', make(v) {
+  { id: 'y-one', ok: true, vars: [1, 2], cat: 'One pair of opposite sides both congruent and parallel', make(v) {
     v = v ?? ri(0, 1);
     const pr = chance(.5) ? [[0, 1], [3, 2]] : [[0, 3], [1, 2]];
     const s1 = LBL[pr[0][0]] + LBL[pr[0][1]], s2 = LBL[pr[1][0]] + LBL[pr[1][1]];
@@ -407,11 +414,11 @@ const TEMPLATES = [
       why: `The <b>same pair</b> of opposite sides, [${s1}] and [${s2}], has both arrows (parallel) and ticks (congruent). That is enough to prove a parallelogram.` }; } },
 
   // ---------- NOT ENOUGH ----------
-  { id: 'n-onepar', ok: false, cat: 'Only one pair of opposite sides parallel', make() {
+  { id: 'n-onepar', ok: false, vars: [1], cat: 'Only one pair of opposite sides parallel', make() {
     return { sh: chance(.5) ? trapShape() : paraShape(), marks: [par(0, 1, 1), par(3, 2, 1)],
       given: '[AB] ∥ [DC]', short: 'Only one pair of sides is parallel. It could be a trapezoid.',
       why: 'Only <b>one</b> pair of opposite sides is marked parallel. A <b>trapezoid</b> also has exactly that, so it is not proven. You need both pairs parallel (or that same pair also congruent).' }; } },
-  { id: 'n-isotrap', ok: false, cat: 'One pair parallel, the OTHER pair congruent', make(v) {
+  { id: 'n-isotrap', ok: false, vars: [1, 2], cat: 'One pair parallel, the OTHER pair congruent', make(v) {
     v = v ?? ri(0, 1); const sh = chance(.55) ? isoTrapShape() : paraShape();
     if (v === 1) { const n = ri(5, 12);
       return { sh, marks: [par(0, 1, 1), par(3, 2, 1), len(0, 3, n), len(1, 2, n)],
@@ -420,11 +427,11 @@ const TEMPLATES = [
     return { sh, marks: [par(0, 1, 1), par(3, 2, 1), tk(0, 3, 1), tk(1, 2, 1)],
       given: '[AB] ∥ [DC] and [AD] ≅ [BC]', short: 'The parallel pair and the congruent pair are different. It could be an isosceles trapezoid.',
       why: 'The arrows are on [AB] & [DC], but the ticks are on [AD] & [BC], a <b>different pair</b>. An <b>isosceles trapezoid</b> fits these marks exactly. For this test the parallel pair and the congruent pair must be the <b>same</b> pair.' }; } },
-  { id: 'n-onecong', ok: false, cat: 'Only one pair of opposite sides congruent', make() {
+  { id: 'n-onecong', ok: false, vars: [1], cat: 'Only one pair of opposite sides congruent', make() {
     return { sh: chance(.5) ? isoTrapShape() : paraShape(), marks: [tk(0, 3, 1), tk(1, 2, 1)],
       given: '[AD] ≅ [BC]', short: 'Only one pair of opposite sides is congruent. It could be an isosceles trapezoid.',
       why: 'Only <b>one</b> pair of opposite sides is marked congruent. An <b>isosceles trapezoid</b> has that too. You need <b>both</b> pairs congruent.' }; } },
-  { id: 'n-kite', ok: false, cat: 'Two pairs of CONSECUTIVE sides congruent', make(v) {
+  { id: 'n-kite', ok: false, vars: [1, 2], cat: 'Two pairs of CONSECUTIVE sides congruent', make(v) {
     v = v ?? ri(0, 1);
     if (v === 1) { const a = ri(4, 8), b = ri(a + 3, 15);
       return { sh: kiteShape(), marks: [len(0, 1, a), len(0, 3, a), len(1, 2, b), len(3, 2, b)],
@@ -433,45 +440,45 @@ const TEMPLATES = [
     return { sh: kiteShape(), marks: [tk(0, 1, 1), tk(0, 3, 1), tk(1, 2, 2), tk(3, 2, 2)],
       given: '[AB] ≅ [AD] and [CB] ≅ [CD]', short: 'The congruent sides are consecutive, not opposite. It\'s a kite.',
       why: 'The matching ticks are on <b>consecutive</b> sides ([AB] & [AD], [CB] & [CD]), which share a vertex. Opposite sides are not marked congruent. This is a <b>kite</b>.' }; } },
-  { id: 'n-oneang', ok: false, cat: 'Only one pair of opposite angles congruent', make() {
+  { id: 'n-oneang', ok: false, vars: [2], cat: 'Only one pair of opposite angles congruent', make() {
     return { sh: chance(.6) ? kiteShape() : paraShape(), marks: [arcM(1, 1), arcM(3, 1)],
       given: '∠B ≅ ∠D', short: 'Only one pair of opposite angles is congruent. It could be a kite.',
       why: 'Only <b>one</b> pair of opposite angles (∠B and ∠D) is marked congruent. A <b>kite</b> has one pair of congruent opposite angles too. You need <b>both</b> pairs.' }; } },
-  { id: 'n-consang', ok: false, cat: 'CONSECUTIVE angles congruent', make() {
+  { id: 'n-consang', ok: false, vars: [2], cat: 'CONSECUTIVE angles congruent', make() {
     return { sh: isoTrapShape(), marks: [arcM(0, 1), arcM(1, 1), arcM(3, 2), arcM(2, 2)],
       given: '∠A ≅ ∠B and ∠D ≅ ∠C', short: 'Those congruent angles are consecutive, not opposite. It could be an isosceles trapezoid.',
       why: 'The matching arcs are on <b>consecutive</b> angles (∠A & ∠B, ∠D & ∠C), not opposite angles. An <b>isosceles trapezoid</b> has two pairs of congruent base angles like this.' }; } },
-  { id: 'n-supp1', ok: false, cat: 'Angle supplementary to only ONE consecutive angle', make() {
+  { id: 'n-supp1', ok: false, vars: [1], cat: 'Angle supplementary to only ONE consecutive angle', make() {
     const sh = trapShape(); const side = chance(.5) ? [0, 3] : [1, 2];
     const a = interior(sh.pts, side[0]), b = interior(sh.pts, side[1]);
     const X = LBL[side[0]], Y = LBL[side[1]];
     return { sh, marks: [angM(side[0]), angM(side[1])],
       given: `m∠${X} = ${a}°, m∠${Y} = ${b}°`, short: `∠${X} is supplementary to only one consecutive angle. It could be a trapezoid.`,
       why: `${a}° + ${b}° = 180°, so ∠${X} is supplementary to ∠${Y}. But that only proves <b>one</b> pair of sides is parallel ([AB] ∥ [DC]). The angle must be supplementary to <b>both</b> consecutive angles. This could be a <b>trapezoid</b>.` }; } },
-  { id: 'n-supp4', ok: false, cat: 'Four angles, but no angle supplementary to BOTH neighbors', make() {
+  { id: 'n-supp4', ok: false, vars: [3], cat: 'Four angles, but no angle supplementary to BOTH neighbors', make() {
     const sh = trapShape(); const a = [0, 1, 2, 3].map(i => interior(sh.pts, i));
     return { sh, marks: [angM(0), angM(1), angM(2), angM(3)],
       given: `m∠A = ${a[0]}°, m∠B = ${a[1]}°, m∠C = ${a[2]}°, m∠D = ${a[3]}°`, short: 'Opposite angles are not congruent. It\'s a trapezoid.',
       why: `∠A + ∠D = 180°, but ∠A + ∠B = ${a[0] + a[1]}°. No angle is supplementary to <b>both</b> of its neighbors, and the opposite angles (${a[0]}° vs ${a[2]}°) are not congruent. This is a <b>trapezoid</b>.` }; } },
-  { id: 'n-onediag', ok: false, cat: 'Only ONE diagonal bisected', make() {
+  { id: 'n-onediag', ok: false, vars: [2], cat: 'Only ONE diagonal bisected', make() {
     return { sh: chance(.6) ? kiteShape() : paraShape(), marks: [DIAG, dtk(1, 1), dtk(3, 1)],
       given: '[BE] ≅ [ED]', short: 'Only one diagonal is bisected. It could be a kite.',
       why: 'Only [BD] is marked as bisected (BE = ED). Nothing says AE = EC. The diagonals must bisect <b>each other</b>. In a <b>kite</b>, one diagonal bisects the other, but not the other way around.' }; } },
-  { id: 'n-diagnum', ok: false, cat: 'Only ONE diagonal bisected', make() {
+  { id: 'n-diagnum', ok: false, vars: [3], cat: 'Only ONE diagonal bisected', make() {
     const b = ri(4, 9), a1 = ri(3, 6), a2 = ri(a1 + 3, 13);
     return { sh: kiteShape(), marks: [DIAG, dl(1, b), dl(3, b), dl(0, a1), dl(2, a2)],
       given: `BE = ED = ${b}, AE = ${a1}, EC = ${a2}`, short: 'AE ≠ EC, so the diagonals don\'t bisect each other.',
       why: `BE = ED = ${b}, so E is the midpoint of [BD]. But AE = ${a1} and EC = ${a2}, so [AC] is <b>not</b> bisected. The diagonals do not bisect <b>each other</b>. It looks like a <b>kite</b>.` }; } },
-  { id: 'n-diagcong', ok: false, cat: 'Diagonals congruent (only)', make() {
+  { id: 'n-diagcong', ok: false, vars: [2], cat: 'Diagonals congruent (only)', make() {
     const n = ri(8, 16);
     return { sh: isoTrapShape(), marks: [DIAG, legend(`AC = ${n},  BD = ${n}`)],
       given: `AC = BD = ${n}`, short: 'Congruent diagonals alone aren\'t enough. Isosceles trapezoids have them too.',
       why: 'The diagonals are <b>congruent</b>, but nothing says they <b>bisect each other</b>. An <b>isosceles trapezoid</b> has congruent diagonals and is not a parallelogram.' }; } },
-  { id: 'n-perp', ok: false, cat: 'Diagonals perpendicular (only)', make() {
+  { id: 'n-perp', ok: false, vars: [2], cat: 'Diagonals perpendicular (only)', make() {
     return { sh: kiteShape(), marks: [DIAG, PERP],
       given: '[AC] ⊥ [BD]', short: 'Perpendicular diagonals alone aren\'t enough. Kites have them too.',
       why: 'The diagonals are <b>perpendicular</b>, but that says nothing about bisecting or parallel sides. A <b>kite</b> has perpendicular diagonals and is not a parallelogram.' }; } },
-  { id: 'n-mismatch', ok: false, cat: 'Mismatched marks: only one pair congruent', make(v) {
+  { id: 'n-mismatch', ok: false, vars: [3, 3], cat: 'Mismatched marks: only one pair congruent', make(v) {
     v = v ?? ri(0, 1);
     if (v === 1) { const p = ri(7, 14), q = ri(4, 9); let r = q + pick([-2, -1, 1, 2, 3]);
       return { sh: generalShape(), marks: [len(0, 1, p), len(3, 2, p), len(0, 3, q), len(1, 2, r)],
@@ -483,13 +490,23 @@ const TEMPLATES = [
 ];
 const YES_T = TEMPLATES.filter(t => t.ok), NO_T = TEMPLATES.filter(t => !t.ok);
 
-function buildQuestions(n) {
-  const nYes = Math.ceil(n / 2), nNo = n - nYes;
-  const take = (pool, k) => { const out = []; let bag = []; while (out.length < k) { if (!bag.length) bag = shuffle(pool.slice()); out.push(bag.pop()); } return out; };
-  const list = shuffle([...take(YES_T, nYes), ...take(NO_T, nNo)]);
-  // avoid the same template twice in a row
-  for (let i = 1; i < list.length; i++) if (list[i] === list[i - 1]) { const j = (i + 2) % list.length; [list[i], list[j]] = [list[j], list[i]]; }
-  return list.map(t => Object.assign({ tpl: t, ok: t.ok, cat: t.cat, id: t.id }, t.make()));
+function variantFor(t) {
+  const av = t.vars.map((l, i) => [l, i]).filter(([l]) => l <= PLEVEL);
+  if (PLEVEL === 3 && av.length > 1 && chance(.65)) { const mx = Math.max(...av.map(a => a[0])); return pick(av.filter(a => a[0] === mx))[1]; }
+  return pick(av)[1];
+}
+// Returns a function that makes the next question; bags make sure every idea comes up before any repeats.
+function makeGen() {
+  const bags = { yes: [], no: [] }; let last = null;
+  const pool = k => (k === 'yes' ? YES_T : NO_T).filter(t => Math.min(...t.vars) <= PLEVEL);
+  return isNo => {
+    const k = isNo ? 'no' : 'yes';
+    if (!bags[k].length) { let p = pool(k); if (PLEVEL === 3) p = p.concat(p.filter(t => Math.min(...t.vars) >= 2)); bags[k] = shuffle(p.slice()); }
+    let i = bags[k].length - 1; if (bags[k][i] === last && i > 0) i--;
+    const t = bags[k].splice(i, 1)[0]; last = t;
+    ROTK = PLEVEL === 3 ? 2.2 : PLEVEL === 1 ? .6 : 1;
+    return Object.assign({ tpl: t, ok: t.ok, cat: t.cat, id: t.id }, t.make(variantFor(t)));
+  };
 }
 
 /* =========================================================
@@ -638,11 +655,31 @@ const sfx = {
 const cv = $('game'), ctx = cv.getContext('2d');
 let W, H, F, HZ, CH;
 const PZ = 4, LX = 1.7, RW = 2.75, ZFAR = 95, SPAWNZ = 62;
-const DIFF = {
-  study: { speed: 8, answer: 24, obstacles: false, accel: .08 },
-  run: { speed: 11, answer: 15, obstacles: true, accel: .18 },
-  sprint: { speed: 14, answer: 9, obstacles: true, accel: .28 },
+const SPEEDS = { slow: 8, normal: 11, fast: 14, turbo: 17 };
+const ANSWERS = { relaxed: 22, normal: 14, quick: 9, lightning: 6 };
+const GAPS = { relaxed: 7, normal: 4, frequent: 2.5 };
+const PV = 9; // extra speed of flying protractors
+const LANE_KINDS = new Set(['log', 'block', 'prot']);
+const SETTINGS = [
+  { key: 'mode', el: 'set-mode', opts: [['course', '🏁 Course', 'a set number of gates'], ['endless', '♾️ Endless', 'run until you\'re caught']] },
+  { key: 'gates', el: 'set-gates', opts: [['10', '10'], ['16', '16'], ['24', '24']] },
+  { key: 'plevel', label: 'Problem difficulty', opts: [['1', 'Basic', 'marks only'], ['2', 'Standard', 'marks + measures'], ['3', 'Challenge', 'tricky cases, tilted']] },
+  { key: 'nonex', label: 'Non‑examples', opts: [['0.1', 'Few', '~10%'], ['0.25', 'Some', '~25%'], ['0.5', 'Half', '~50%']] },
+  { key: 'speed', label: 'Runner speed', opts: [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast'], ['turbo', 'Turbo']] },
+  { key: 'answer', label: 'Time to answer', opts: [['relaxed', 'Relaxed', '22 s'], ['normal', 'Normal', '14 s'], ['quick', 'Quick', '9 s'], ['lightning', 'Lightning', '6 s']] },
+  { key: 'freq', label: 'Gates come', opts: [['relaxed', 'Now and then', '~7 s apart'], ['normal', 'Often', '~4 s apart'], ['frequent', 'Back to back', '~2.5 s apart']] },
+  { key: 'obst', label: 'Obstacles', opts: [['0', 'Off'], ['1', 'Light'], ['2', 'Normal'], ['3', 'Heavy']] },
+  { key: 'lives', label: 'Lives', opts: [['3', '3'], ['5', '5'], ['0', 'Unlimited', 'practice']] },
+];
+const DEFAULTS = { mode: 'course', gates: '16', plevel: '2', nonex: '0.25', speed: 'normal', answer: 'normal', freq: 'normal', obst: '2', lives: '3' };
+const PRESETS = {
+  study: { plevel: '1', speed: 'slow', answer: 'relaxed', freq: 'relaxed', obst: '0', lives: '0' },
+  run: { plevel: '2', speed: 'normal', answer: 'normal', freq: 'normal', obst: '2', lives: '3' },
+  sprint: { plevel: '3', speed: 'fast', answer: 'quick', freq: 'frequent', obst: '3', lives: '3' },
 };
+const CFG = (() => { const c = { ...DEFAULTS }; try { Object.assign(c, JSON.parse(localStorage.getItem('pgramRunCfg') || '{}')); } catch (e) { /* storage blocked */ } return c; })();
+function saveCfg() { try { localStorage.setItem('pgramRunCfg', JSON.stringify(CFG)); } catch (e) { /* storage blocked */ } }
+function optLabel(key) { const st = SETTINGS.find(x => x.key === key); return st.opts.find(o => o[0] === CFG[key])[1]; }
 const S = { mode: 'title', t: 0, dist: 0, speed: 6, px: 0, lane: 0, py: 0, vy: 0, slideT: 0, objs: [], chase: 0, flash: null, paused: false, stumbleT: 0 };
 
 function resize() {
@@ -650,7 +687,7 @@ function resize() {
   W = innerWidth; H = innerHeight;
   cv.width = W * dpr; cv.height = H * dpr; cv.style.width = W + 'px'; cv.style.height = H + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  HZ = H * .42;
+  HZ = H * .37;
   F = Math.min(H * .95, W * 1.0);
   CH = (H * .90 - HZ) * PZ / F;
 }
@@ -658,13 +695,17 @@ addEventListener('resize', resize); resize();
 const proj = (x, y, z) => [W / 2 + x * F / z, HZ + (CH - y) * F / z, F / z];
 
 function newGame() {
-  const diff = document.querySelector('input[name=diff]:checked').value;
-  const n = +document.querySelector('input[name=len]:checked').value;
+  PLEVEL = +CFG.plevel;
+  const endless = CFG.mode === 'endless', lives = +CFG.lives, gen = makeGen();
+  let qList = [];
+  if (!endless) { const n = +CFG.gates, k = Math.round(n * +CFG.nonex); qList = shuffle([...Array(n)].map((_, i) => i < k)).map(f => gen(f)); }
   Object.assign(S, {
-    mode: 'play', diffKey: diff, diff: DIFF[diff], practice: $('practiceIn').checked, name: $('nameIn').value.trim(),
-    qList: buildQuestions(n), qi: 0, lives: 3, score: 0, coins: 0, dist: 0, speed: DIFF[diff].speed,
+    mode: 'play', endless, gen, nonex: +CFG.nonex, practice: lives === 0, maxLives: lives || 3, lives: lives || 3, name: $('nameIn').value.trim(),
+    qList, qi: 0, score: 0, coins: 0, dist: 0, speed: SPEEDS[CFG.speed], answerT: ANSWERS[CFG.answer], answerT0: ANSWERS[CFG.answer],
+    gap: GAPS[CFG.freq], obst: +CFG.obst, chosen: 0,
     streak: 0, bestStreak: 0, results: [], px: 0, lane: 0, py: 0, vy: 0, slideT: 0, objs: [], gate: null,
     chase: 0, flash: null, paused: false, stumbleT: 0, rush: false, ending: 0, hits: 0, startT: performance.now(),
+    cfgText: `${endless ? '♾️ Endless' : '🏁 Course'} · Problems: ${optLabel('plevel')} · Non‑examples: ${optLabel('nonex')} · Speed: ${optLabel('speed')} · Answer time: ${optLabel('answer')} · Obstacles: ${optLabel('obst')} · Lives: ${optLabel('lives')}`,
   });
   startRun(true);
   ['titleScr', 'resScr', 'guideScr', 'fbScr', 'pauseScr'].forEach(id => $(id).classList.add('hidden'));
@@ -675,29 +716,49 @@ function newGame() {
 }
 
 function startRun(first) {
-  S.phase = 'run'; S.runDist = 0; S.gate = null; S.rush = false;
-  const d = S.diff;
-  S.spawnStop = d.obstacles ? S.speed * (first ? 3.5 : 2.6) : 0;
-  S.runLen = S.speed * (d.obstacles ? 2.6 : (first ? 3 : 2));
-  S.spawnNext = first ? 10 : 4;
-  // a few coins even in Study mode
-  if (!d.obstacles) spawnCoins(pick([-1, 0, 1]), SPAWNZ * .6, 6);
+  S.phase = 'run'; S.runDist = 0; S.gate = null; S.rush = false; S.chosen = 0;
+  const gapT = S.gap + (first ? 2.5 : 0);
+  S.runLen = S.speed * gapT;
+  if (S.obst > 0) {
+    const step = [0, 2.4, 1.6, 1.15][S.obst];
+    for (let t = first ? 2.6 : 1.4; t <= gapT - .6; t += step * rand(.85, 1.15)) spawnPattern(t, false);
+  } else spawnCoins(pick([-1, 0, 1]), PZ + S.speed * 1.6, 6);
 }
 
 function spawnCoins(lane, z, n, arc = false) {
-  for (let i = 0; i < n; i++) S.objs.push({ kind: 'coin', x: lane * LX, z: z + i * 2.4, y: arc ? .6 + Math.sin(i / (n - 1) * Math.PI) * 1.1 : .6 });
+  for (let i = 0; i < n; i++) S.objs.push({ kind: 'coin', x: lane * LX, z: z + i * 2.4, y: arc ? .6 + Math.sin(i / (n - 1) * Math.PI) * 1.1 : .6, fade: 0 });
 }
-function spawnPattern() {
-  const r = Math.random(), lane = ri(-1, 1), z = SPAWNZ;
-  if (r < .32) { S.objs.push({ kind: 'log', x: lane * LX, z }); spawnCoins(lane, z - 3.6, 4, true); spawnCoins(pick([-1, 0, 1].filter(l => l !== lane)), z, 3); }
-  else if (r < .58) { const free = ri(-1, 1); [-1, 0, 1].filter(l => l !== free).forEach(l => { if (chance(.75) || l === lane) S.objs.push({ kind: 'block', x: l * LX, z }); }); spawnCoins(free, z - 4, 4); }
-  else if (r < .8) { S.objs.push({ kind: 'vine', x: 0, z }); spawnCoins(lane, z + 3, 3); }
+function spawnProt(lane, t, canDrift = true) {
+  const drift = canDrift && S.obst >= 2 && chance(.4);
+  const tx = drift ? (lane === 0 ? pick([-1, 1]) : 0) * LX : lane * LX;
+  S.objs.push({ kind: 'prot', x: lane * LX, tx, drift, z: PZ + (S.speed + PV) * t, y: 1, v: PV, spin: rand(0, 6), fade: 0 });
+}
+// t = seconds until the obstacle reaches the runner
+function spawnPattern(t, allLaneOnly) {
+  const z = PZ + S.speed * t, lane = ri(-1, 1), others = [-1, 0, 1].filter(l => l !== lane), heavy = S.obst >= 3;
+  const w = allLaneOnly ? { wall: 1, vine: 1, ruler: 1 }
+    : { log: 3, blocks: 2, wall: 2, vine: 1.5, ruler: 1.5, prot: 2.5, prot2: heavy ? 2 : .8, combo: heavy ? 2 : 1, coins: S.obst === 1 ? 2 : 1 };
+  let r = Math.random() * Object.values(w).reduce((a, b) => a + b, 0), kind;
+  for (const [k, v] of Object.entries(w)) { r -= v; if (r <= 0) { kind = k; break; } }
+  kind = kind || 'log';
+  const add = o => S.objs.push(Object.assign({ fade: 0, seed: ri(0, 999) }, o));
+  if (kind === 'log') { add({ kind: 'log', x: lane * LX, z }); spawnCoins(lane, z - 3.6, 4, true); }
+  else if (kind === 'blocks') { others.forEach(l => add({ kind: 'block', x: l * LX, z })); spawnCoins(lane, z - 4, 4); }
+  else if (kind === 'wall') { add({ kind: 'wall', x: 0, z }); if (!allLaneOnly) spawnCoins(lane, z - 3.6, 4, true); }
+  else if (kind === 'vine') add({ kind: 'vine', x: 0, z });
+  else if (kind === 'ruler') { add({ kind: 'ruler', x: 0, z }); if (!allLaneOnly) spawnCoins(lane, z, 3); }
+  else if (kind === 'prot') spawnProt(lane, t);
+  else if (kind === 'prot2') { spawnProt(others[0], t, false); spawnProt(others[1], t + .55, false); }
+  else if (kind === 'combo') { add({ kind: 'log', x: lane * LX, z }); spawnProt(pick(others), t + .3, false); }
   else spawnCoins(lane, z, 6);
 }
 
 function startQuestion() {
+  if (S.endless && S.qi >= S.qList.length) S.qList.push(S.gen(Math.random() < S.nonex));
   S.phase = 'question'; S.cur = S.qList[S.qi]; S.lane = 0; S.chosen = 0; S.rush = false; S.hintUsed = false;
-  S.gate = { z: PZ + S.speed * S.diff.answer }; S.gateTotal = S.gate.z - PZ;
+  S.gate = { z: PZ + S.speed * S.answerT }; S.gateTotal = S.gate.z - PZ;
+  // jump/slide obstacles while thinking (lane doesn't matter, so they never pick an arch for you)
+  if (S.obst >= 2) { const step = S.obst >= 3 ? 2.3 : 3.4; for (let t = 2.2; t < S.answerT - 2.6; t += step * rand(.9, 1.2)) spawnPattern(t, true); }
   showCard();
 }
 
@@ -720,9 +781,10 @@ function resolveGate() {
     S.score += pts; S.flash = { col: '56,210,122', t: .5 };
     sfx.good();
     toast(`<b class="big">✔ ${q.ok ? 'PARALLELOGRAM!' : 'NOT ENOUGH INFO!'} +${pts}</b>${fmt(q.short)}${S.streak >= 3 ? ` · 🔥 ${S.streak} in a row!` : ''}`, 3200, true);
-    S.speed += S.diff.accel;
+    S.speed += S.endless ? .25 : .15;
+    if (S.endless) S.answerT = Math.max(5, S.answerT0 * .6, S.answerT * .98);
     updateHud();
-    if (S.qi >= S.qList.length) { S.ending = 1.6; S.phase = 'end'; return; }
+    if (!S.endless && S.qi >= S.qList.length) { S.ending = 1.6; S.phase = 'end'; return; }
     startRun(false);
   } else {
     S.streak = 0; if (!S.practice) S.lives--; S.chase = 7; S.flash = { col: '220,60,40', t: .7 };
@@ -738,7 +800,9 @@ function stumble(o) {
 
 function update(dt) {
   S.t += dt;
-  const sp = S.speed * (S.rush ? 3.2 : 1) * (S.stumbleT > 0 ? .55 : 1);
+  const dash = S.rush && !S.objs.some(o => o.kind !== 'coin' && o.z > PZ);
+  const sp = S.speed * (dash ? 3.2 : 1) * (S.stumbleT > 0 ? .55 : 1);
+  S.dashing = dash;
   S.dist += sp * dt;
   S.px += (S.lane * LX - S.px) * Math.min(1, dt * 13);
   if (S.py > 0 || S.vy > 0) { S.vy -= 24 * dt; S.py += S.vy * dt; if (S.py <= 0) { S.py = 0; S.vy = 0; } }
@@ -748,29 +812,34 @@ function update(dt) {
   if (S.flash) { S.flash.t -= dt; if (S.flash.t <= 0) S.flash = null; }
 
   for (const o of S.objs) {
-    const pz = o.z; o.z -= sp * dt;
+    const pz = o.z; o.z -= (sp + (o.v || 0)) * dt;
+    o.fade = Math.min(1, (o.fade ?? 1) + dt * 3);
+    if (o.kind === 'prot') {
+      if (o.drift && o.z < 30) o.x += clamp(o.tx - o.x, -3.6 * dt, 3.6 * dt);
+      if (!o.warned && o.z < 34) { o.warned = true; beep(900, .35, 'sawtooth', .03, 300); }
+    }
     if (!o.done && pz > PZ && o.z <= PZ) {
       o.done = true;
       const near = Math.abs(S.px - o.x) < .95;
       if (o.kind === 'coin') { if (Math.abs(S.px - o.x) < .9 && Math.abs(S.py + .6 - o.y) < 1.1) { o.got = true; S.coins++; S.score += 10; sfx.coin(); updateHud(); } }
       else if (o.kind === 'log') { if (near && S.py < .55) stumble(o); }
-      else if (o.kind === 'block') { if (near) stumble(o); }
-      else if (o.kind === 'vine') { if (S.slideT <= 0) stumble(o); }
+      else if (o.kind === 'block' || o.kind === 'prot') { if (Math.abs(S.px - o.x) < .9) stumble(o); }
+      else if (o.kind === 'wall') { if (S.py < .5) stumble(o); }
+      else if (o.kind === 'vine' || o.kind === 'ruler') { if (S.slideT <= 0) stumble(o); }
     }
   }
   S.objs = S.objs.filter(o => o.z > .8 && !o.got);
 
   if (S.phase === 'run') {
     S.runDist += sp * dt;
-    if (S.diff.obstacles && S.runDist >= S.spawnNext && S.runDist < S.spawnStop) { spawnPattern(); S.spawnNext += rand(17, 26); }
-    const clear = !S.objs.some(o => o.kind !== 'coin' && o.z > PZ - .5);
-    if (S.runDist >= S.runLen + (S.diff.obstacles ? S.spawnStop : 0) && clear) startQuestion();
+    const clear = !S.objs.some(o => LANE_KINDS.has(o.kind) && o.z > PZ - .5);
+    if (S.runDist >= S.runLen && clear) startQuestion();
   } else if (S.phase === 'question') {
     S.gate.z -= sp * dt;
     $('timerFill').style.transform = `scaleX(${clamp((S.gate.z - PZ) / S.gateTotal, 0, 1)})`;
     if (S.gate.z <= PZ) resolveGate();
   } else if (S.phase === 'end') {
-    S.ending -= dt; if (S.ending <= 0) finish(true);
+    S.ending -= dt; if (S.ending <= 0) finish('won');
   }
 }
 
@@ -850,7 +919,8 @@ function drawGround() {
   ctx.fillStyle = hg; ctx.fillRect(0, HZ, W, H * .1);
 }
 
-function fogAlpha(z) { return clamp((ZFAR + 10 - z) / 25, 0, 1); }
+let OBJA = 1; // per-object fade-in
+function fogAlpha(z) { return clamp((ZFAR + 10 - z) / 25, 0, 1) * OBJA; }
 
 function drawTree(x, z, h) {
   const [bx, by, s] = proj(x, 0, z);
@@ -922,6 +992,54 @@ function drawVine(o) {
   ctx.globalAlpha = 1;
 }
 
+function drawWall(o) {
+  const z = o.z, s = F / z; ctx.globalAlpha = fogAlpha(z);
+  const l = proj(-RW - .2, 0, z), r = proj(RW + .2, 0, z), top = proj(0, .6, z)[1], n = 8, w = (r[0] - l[0]) / n;
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.beginPath(); ctx.ellipse((l[0] + r[0]) / 2, l[1], (r[0] - l[0]) * .55, .2 * s, 0, 0, 7); ctx.fill();
+  for (let i = 0; i < n; i++) {
+    const hh = (l[1] - top) * (.75 + hash(i + o.seed) * .4), cx = l[0] + w * (i + .5);
+    ctx.fillStyle = i % 2 ? '#8f7a59' : '#a58f69'; ctx.beginPath(); ctx.ellipse(cx, l[1] - hh / 2, w * .62, hh / 2, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.12)'; ctx.beginPath(); ctx.ellipse(cx - w * .15, l[1] - hh * .7, w * .25, hh * .15, 0, 0, 7); ctx.fill();
+  }
+  if (s > 16) { ctx.fillStyle = '#fff3c4'; ctx.font = `900 ${Math.max(8, .36 * s)}px Nunito, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.strokeStyle = 'rgba(43,28,16,.7)'; ctx.lineWidth = 3; ctx.strokeText('▲ JUMP ▲', W / 2, top - .35 * s); ctx.fillText('▲ JUMP ▲', W / 2, top - .35 * s); }
+  ctx.globalAlpha = 1;
+}
+function drawRuler(o) {
+  const z = o.z, s = F / z; ctx.globalAlpha = fogAlpha(z);
+  const l = proj(-RW - .3, 0, z), r = proj(RW + .3, 0, z), top = proj(0, 1.75, z)[1], bot = proj(0, 1.25, z)[1], postTop = proj(0, 2.1, z)[1];
+  ctx.fillStyle = '#5b3a1e'; ctx.fillRect(l[0] - .15 * s, postTop, .3 * s, l[1] - postTop); ctx.fillRect(r[0] - .15 * s, postTop, .3 * s, r[1] - postTop);
+  ctx.fillStyle = '#e9c46a'; ctx.fillRect(l[0] - .4 * s, top, r[0] - l[0] + .8 * s, bot - top);
+  ctx.strokeStyle = '#7a5130'; ctx.lineWidth = Math.max(1, .04 * s); ctx.strokeRect(l[0] - .4 * s, top, r[0] - l[0] + .8 * s, bot - top);
+  const span = RW * 2 + .8, steps = 24;
+  for (let i = 1; i < steps; i++) {
+    const x = l[0] - .4 * s + (r[0] - l[0] + .8 * s) * i / steps, big = i % 4 === 0;
+    ctx.beginPath(); ctx.moveTo(x, top); ctx.lineTo(x, top + (bot - top) * (big ? .55 : .3)); ctx.stroke();
+    if (big && s > 14) { ctx.fillStyle = '#5b3a1e'; ctx.font = `800 ${.2 * s}px Nunito, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(String(i / 4), x, top + (bot - top) * .78); }
+  }
+  if (s > 16) { ctx.fillStyle = '#fff3c4'; ctx.font = `900 ${Math.max(8, .36 * s)}px Nunito, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.strokeStyle = 'rgba(43,28,16,.7)'; ctx.lineWidth = 3; ctx.strokeText('▼ SLIDE ▼', W / 2, bot + .35 * s); ctx.fillText('▼ SLIDE ▼', W / 2, bot + .35 * s); }
+  ctx.globalAlpha = 1;
+}
+function drawProt(o) {
+  const [x, y, s] = proj(o.x, o.y, o.z), g = proj(o.x, 0, o.z); ctx.globalAlpha = fogAlpha(o.z);
+  // lane warning shadow
+  ctx.fillStyle = 'rgba(200,40,30,.35)'; ctx.beginPath(); ctx.ellipse(g[0], g[1], .7 * s, .18 * s, 0, 0, 7); ctx.fill();
+  // speed trail
+  ctx.strokeStyle = 'rgba(255,240,180,.55)'; ctx.lineWidth = Math.max(1, .06 * s);
+  for (const dy of [-.25, 0, .25]) { const t = proj(o.x, o.y + dy, o.z + 3.5); ctx.beginPath(); ctx.moveTo(x, y + dy * s); ctx.lineTo(t[0], t[1]); ctx.stroke(); }
+  ctx.save(); ctx.translate(x, y); ctx.rotate(S.t * 9 + o.spin);
+  const R = .6 * s;
+  ctx.fillStyle = 'rgba(250,226,120,.92)'; ctx.strokeStyle = '#a07a12'; ctx.lineWidth = Math.max(1, .05 * s);
+  ctx.beginPath(); ctx.arc(0, 0, R, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, R * .55, Math.PI, 0); ctx.stroke();
+  for (let a = 0; a <= 12; a++) { const an = Math.PI + a * Math.PI / 12; ctx.beginPath(); ctx.moveTo(Math.cos(an) * R * .8, Math.sin(an) * R * .8); ctx.lineTo(Math.cos(an) * R, Math.sin(an) * R); ctx.stroke(); }
+  ctx.restore();
+  if (o.z > 16 && s > 6) { // "!" warning bubble
+    const by = y - 1.1 * s; ctx.fillStyle = '#d1342f'; ctx.beginPath(); ctx.arc(x, by, .32 * s, 0, 7); ctx.fill();
+    ctx.fillStyle = '#fff'; ctx.font = `900 ${.45 * s}px Nunito, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('!', x, by + .02 * s);
+  }
+  ctx.globalAlpha = 1;
+}
+
 function drawGate(z) {
   if (z > ZFAR + 10) return;
   const s = F / z; ctx.globalAlpha = fogAlpha(z);
@@ -975,7 +1093,7 @@ function drawGate(z) {
 /* ---------- Professor Protractor (back view, running) ---------- */
 function drawRunner() {
   const ground = proj(S.px, 0, PZ), feet = proj(S.px, S.py, PZ), s = F / PZ;
-  const u = s * 1.75 / 18;
+  const u = s * 1.3 / 18;
   const x = feet[0], y = feet[1];
   // shadow
   ctx.fillStyle = 'rgba(0,0,0,.28)'; ctx.beginPath(); ctx.ellipse(ground[0], ground[1], u * 5 * (1 - S.py * .2), u * 1.4, 0, 0, 7); ctx.fill();
@@ -1098,13 +1216,13 @@ function render() {
       if (h > .55) items.push({ z: z - .5, f: () => drawBush(side * (RW + .9), z - .5) });
     }
   }
-  for (const o of S.objs) { const f = { coin: drawCoin, log: drawLog, block: drawBlock, vine: drawVine }[o.kind]; items.push({ z: o.z, f: () => f(o) }); }
+  for (const o of S.objs) { const f = { coin: drawCoin, log: drawLog, block: drawBlock, vine: drawVine, wall: drawWall, ruler: drawRuler, prot: drawProt }[o.kind]; items.push({ z: o.z, f: () => { OBJA = o.fade ?? 1; f(o); OBJA = 1; } }); }
   if (S.gate) items.push({ z: S.gate.z, f: () => drawGate(S.gate.z) });
   items.push({ z: PZ, f: drawRunner });
   items.sort((a, b) => b.z - a.z);
   for (const it of items) if (it.z > .9) it.f();
   // speed lines during dash
-  if (S.rush && S.mode === 'play') {
+  if (S.dashing && S.mode === 'play') {
     ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 2;
     for (let i = 0; i < 14; i++) { const a = hash(i + Math.floor(S.t * 20)) * Math.PI * 2, r1 = Math.min(W, H) * (.35 + hash(i * 3 + Math.floor(S.t * 20)) * .2);
       ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(a) * r1, HZ + Math.sin(a) * r1 * .7); ctx.lineTo(W / 2 + Math.cos(a) * r1 * 1.4, HZ + Math.sin(a) * r1 * .98); ctx.stroke(); }
@@ -1128,8 +1246,8 @@ function loop(now) {
    UI
    ========================================================= */
 function updateHud() {
-  $('hearts').textContent = S.practice ? '❤️ ∞' : ('❤️'.repeat(Math.max(0, S.lives)) + '🖤'.repeat(Math.max(0, 3 - S.lives)));
-  $('gateNum').textContent = `GATE ${Math.min(S.qi + 1, S.qList.length)}/${S.qList.length}`;
+  $('hearts').textContent = S.practice ? '❤️ ∞' : ('❤️'.repeat(Math.max(0, S.lives)) + '🖤'.repeat(Math.max(0, S.maxLives - S.lives)));
+  $('gateNum').textContent = S.endless ? `GATE ${S.qi + 1} ♾️` : `GATE ${Math.min(S.qi + 1, S.qList.length)}/${S.qList.length}`;
   $('coinCt').textContent = S.coins; $('scoreCt').textContent = S.score;
 }
 let toastTimer = null;
@@ -1140,7 +1258,7 @@ function toast(html, ms = 2500, good = true) {
 }
 function showCard() {
   const q = S.cur;
-  $('qnum').textContent = `GATE ${S.qi + 1} / ${S.qList.length}`;
+  $('qnum').textContent = S.endless ? `GATE ${S.qi + 1}` : `GATE ${S.qi + 1} / ${S.qList.length}`;
   drawDiagram($('qdiag'), q);
   $('hintText').classList.add('hidden'); $('hintText').innerHTML = '<span style="font-weight:400">Given:</span> ' + fmt(q.given);
   $('hintBtn').classList.remove('hidden');
@@ -1163,15 +1281,15 @@ function showFeedback(q, ans) {
   drawDiagram($('fbDiag'), q);
   $('fbWhy').innerHTML = fmt(q.why); $('fbWhy').className = 'fbbox' + (q.ok ? ' good' : '');
   $('fbGiven').innerHTML = fmt(q.given);
-  const dead = !S.practice && S.lives <= 0, done = S.qi >= S.qList.length;
+  const dead = !S.practice && S.lives <= 0, done = !S.endless && S.qi >= S.qList.length;
   $('fbBtn').textContent = dead ? 'See Results…' : done ? 'Finish ▶' : 'Keep Running ▶';
   $('fbScr').classList.remove('hidden');
   setTimeout(() => $('fbBtn').focus(), 50);
 }
 function closeFeedback() {
   $('fbScr').classList.add('hidden'); S.paused = false;
-  if (!S.practice && S.lives <= 0) { finish(false); return; }
-  if (S.qi >= S.qList.length) { finish(true); return; }
+  if (!S.practice && S.lives <= 0) { finish('caught'); return; }
+  if (!S.endless && S.qi >= S.qList.length) { finish('won'); return; }
   startRun(false);
 }
 function setPause(p) {
@@ -1180,17 +1298,22 @@ function setPause(p) {
   // hide the card while paused so the clock can't be dodged
   if (S.phase === 'question') $('qcard').classList.toggle('hidden', p);
 }
-function finish(won) {
-  S.mode = won ? 'won' : 'over'; hideCard();
+function finish(how) {
+  S.mode = how === 'caught' ? 'over' : 'won'; S.paused = false; hideCard();
+  ['pauseScr', 'fbScr'].forEach(id => $(id).classList.add('hidden'));
   $('hud').classList.add('hidden'); $('touchpad').classList.remove('on'); $('toast').classList.add('hidden');
   const R = S.results, nC = R.filter(r => r.correct).length;
-  $('resTitle').textContent = won ? '🏆 You escaped the Temple of Euclid!' : '😱 The Not‑a‑grams caught you!';
+  let best = 0, newBest = false;
+  if (S.endless) { try { best = +localStorage.getItem('pgramRunBest') || 0; if (S.score > best) { localStorage.setItem('pgramRunBest', S.score); newBest = best > 0; best = S.score; } } catch (e) { best = S.score; } }
+  $('resTitle').textContent = S.endless ? (how === 'caught' ? `😱 Caught after ${S.qi} gates!` : `♾️ Endless run: ${S.qi} gates`) + (newBest ? ' New best! 🏆' : '')
+    : how === 'won' ? '🏆 You escaped the Temple of Euclid!' : how === 'caught' ? '😱 The Not‑a‑grams caught you!' : '🏁 Run ended';
   const mins = Math.round((performance.now() - S.startT) / 60000 * 10) / 10;
-  $('resSub').innerHTML = `${S.name ? `<b>${S.name.replace(/[<>&]/g, '')}</b> · ` : ''}${{ study: '🐢 Study', run: '🏃 Run', sprint: '⚡ Sprint' }[S.diffKey]} pace${S.practice ? ' · Practice mode' : ''} · ${new Date().toLocaleString()}`;
+  $('resSub').innerHTML = `${S.name ? `<b>${S.name.replace(/[<>&]/g, '')}</b> · ` : ''}${new Date().toLocaleString()}<br><span style="font-weight:400;font-size:13px">${S.cfgText}</span>`;
   const pct = R.length ? Math.round(nC / R.length * 100) : 0;
   $('resStats').innerHTML = [
     [`${nC}/${R.length}`, 'gates correct'], [pct + '%', 'accuracy'], [S.score, 'score'], [S.bestStreak, 'best streak'],
-    [S.coins, 'coins'], [`${S.qi}/${S.qList.length}`, 'gates reached'], [mins + ' min', 'run time'],
+    [S.coins, 'coins'], [S.endless ? S.qi : `${S.qi}/${S.qList.length}`, 'gates reached'], [mins + ' min', 'run time'],
+    ...(S.endless ? [[best, 'best endless score']] : []),
   ].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('');
   // breakdown by idea
   const rows = new Map();
@@ -1343,12 +1466,37 @@ $('fbBtn').onclick = closeFeedback;
 $('pauseBtn').onclick = () => setPause(true);
 $('resumeBtn').onclick = () => setPause(false);
 $('quitBtn').onclick = toTitle;
+$('endBtn').onclick = () => finish('quit');
 $('againBtn').onclick = newGame;
 $('menuBtn').onclick = toTitle;
 $('printBtn').onclick = () => window.print();
 function toggleMute() { muted = !muted; $('muteBtn').textContent = muted ? '🔇' : '🔊'; }
 $('muteBtn').onclick = toggleMute;
 document.addEventListener('visibilitychange', () => { if (document.hidden && S.mode === 'play' && !S.paused) setPause(true); });
+
+function buildSettings() {
+  const grid = $('settingsGrid'); grid.innerHTML = '';
+  for (const st of SETTINGS) {
+    if (!st.opts.some(o => o[0] === CFG[st.key])) CFG[st.key] = DEFAULTS[st.key];
+    let host;
+    if (st.el) host = $(st.el);
+    else { const l = document.createElement('span'); l.className = 'lbl2'; l.textContent = st.label; l.id = `lbl-${st.key}`; grid.appendChild(l); host = document.createElement('div'); host.className = 'seg-ctl'; host.setAttribute('aria-labelledby', l.id); grid.appendChild(host); }
+    host.setAttribute('role', 'radiogroup');
+    host.innerHTML = st.opts.map(([v, t, sm]) => `<input type="radio" name="${st.key}" id="opt-${st.key}-${v.replace('.', '_')}" value="${v}"${CFG[st.key] === v ? ' checked' : ''}><label for="opt-${st.key}-${v.replace('.', '_')}">${t}${sm ? `<small>${sm}</small>` : ''}</label>`).join('');
+    host.addEventListener('change', e => { CFG[st.key] = e.target.value; saveCfg(); syncSettingsUI(); });
+  }
+  syncSettingsUI();
+}
+function syncSettingsUI() {
+  $('gatesField').classList.toggle('hidden', CFG.mode === 'endless');
+  document.querySelectorAll('[data-preset]').forEach(b => { const p = PRESETS[b.dataset.preset]; b.classList.toggle('active', Object.keys(p).every(k => CFG[k] === p[k])); });
+}
+document.querySelectorAll('[data-preset]').forEach(b => b.onclick = () => {
+  Object.assign(CFG, PRESETS[b.dataset.preset]); saveCfg();
+  SETTINGS.forEach(st => { const r = document.getElementById(`opt-${st.key}-${CFG[st.key].replace('.', '_')}`); if (r) r.checked = true; });
+  syncSettingsUI();
+});
+buildSettings();
 
 drawPortrait();
 if (document.fonts) document.fonts.ready.then(drawPortrait);

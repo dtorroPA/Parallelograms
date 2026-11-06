@@ -21,12 +21,28 @@ Only one pair of sides parallel (trapezoid) · one pair parallel and the *other*
 Diagrams are randomly generated each time, so no two runs are the same. Non-examples are often drawn to *look* like parallelograms, which teaches students to trust the marks and not the picture.
 
 ## Classroom options
-- **Pace:** Study (slow, no obstacles), Run, or Sprint
-- **Gates:** 10, 16, or 24 questions (about half sufficient, half non-examples)
-- **Practice mode:** unlimited lives
+On the title screen, pick a **mode** and a **quick preset** (Study, Run, or Sprint), or open **Customize** to set each option yourself. The game remembers your choices on that device.
+
+- **Mode:** Course (10, 16, or 24 gates, ending in an escape) or Endless (gates keep coming and the pace slowly increases until the runner is caught; tracks a best score)
+- **Problem difficulty:** Basic (marks only, upright shapes), Standard (marks plus side lengths, angle measures, and diagonal lengths), Challenge (more tricky cases such as four-angle trapezoids, mismatched marks, and diagonal numbers, with more tilted diagrams)
+- **Non-examples:** about 10%, 25% (default), or 50% of gates
+- **Runner speed:** Slow, Normal, Fast, Turbo
+- **Time to answer:** 22 s, 14 s, 9 s, or 6 s
+- **Gates come:** about every 7 s, 4 s, or 2.5 s of running
+- **Obstacles:** Off, Light, Normal, Heavy
+- **Lives:** 3, 5, or unlimited (practice)
+
+Other features:
 - **Hint:** "Read the givens in words" shows the given as text (half points)
 - **Theorem Guide:** a reference sheet with marked diagrams of all six tests and the common traps
-- **Results screen:** the student's name, accuracy, a breakdown by criterion, and every missed gate with its diagram and explanation. Students can print it or save it as a PDF to turn in.
+- **Results screen:** the student's name, the settings used, accuracy, a breakdown by criterion, and every missed gate with its diagram and explanation. Students can print it or save it as a PDF to turn in. Use **Pause → End Run** to finish early.
+
+## Obstacles
+- **Jump:** rubble walls across the whole path, and fallen columns in one lane (you can also dodge these)
+- **Slide:** hanging vines and giant rulers
+- **Dodge left or right:** stone pillars and flying protractors. Watch for the red "!" and the shadow on the path. Some protractors drift into a new lane.
+
+While a question is on screen, only jump and slide obstacles appear, so dodging never picks an arch for you.
 
 ## Controls
 `←`/`→` or `A`/`D`: choose an arch (or switch lanes between gates) · `Y`/`N`: choose an arch · `↑`/`Space`: jump · `↓`: slide · `H`: hint · `P`: pause · `M`: mute. You can also click the answer buttons on the question card.
