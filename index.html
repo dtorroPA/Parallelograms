@@ -714,7 +714,6 @@ function beep(f, dur, type = 'sine', vol = .12, f2 = null, delay = 0) {
 const sfx = {
   coin() { beep(988, .07, 'square', .05); beep(1319, .12, 'square', .05, null, .06); },
   jump() { beep(300, .18, 'triangle', .1, 600); },
-  slide() { beep(400, .2, 'sawtooth', .04, 150); },
   hit() { beep(140, .3, 'sawtooth', .12, 60); },
   good() { [523, 659, 784, 1047].forEach((f, i) => beep(f, .18, 'triangle', .1, null, i * .08)); },
   bad() { beep(220, .25, 'square', .08, 110); beep(160, .35, 'square', .08, 80, .18); },
@@ -1532,7 +1531,7 @@ function act(a) {
   if (a === 'left') { if (S.phase === 'question') choose(-1); else S.lane = Math.max(-1, S.lane - 1); }
   else if (a === 'right') { if (S.phase === 'question') choose(1); else S.lane = Math.min(1, S.lane + 1); }
   else if (a === 'jump') { if (S.py === 0 && S.slideT <= 0) { S.vy = 8.2; S.py = .001; sfx.jump(); } }
-  else if (a === 'slide') { if (S.py > 0) S.vy = -12; S.slideT = .8; sfx.slide(); }
+  else if (a === 'slide') { if (S.py > 0) S.vy = -12; S.slideT = .8; }
 }
 addEventListener('keydown', e => {
   const tag = (e.target.tagName || '').toLowerCase();
