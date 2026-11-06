@@ -21,6 +21,8 @@
   --no-2: #f08a4b;
   --red: #c0392b;
   --blue: #2463b5;
+  --opt: #2f6fb5;
+  --opt-b: #7d4bb3;
   --display: "Luckiest Guy", "Trebuchet MS", system-ui, sans-serif;
   --body: "Nunito", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -55,6 +57,10 @@ button { font-family: var(--body); cursor: pointer; }
 .choice:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--wood); }
 .choice.yes { background: var(--yes); }
 .choice.no { background: var(--no); }
+.choice.opt { background: var(--opt); font-family: var(--body); font-weight: 900; font-size: clamp(14px, 3.4vw, 17px); text-shadow: none; }
+.choice.opt.b { background: var(--opt-b); }
+.choice.opt .seg { text-decoration-color: #fff; }
+.tag.miss { background: var(--opt); }
 .choice.picked { outline: 4px solid var(--gold); outline-offset: 2px; filter: brightness(1.12); }
 .choice.dim { opacity: .55; }
 .linkbtn { background: none; border: none; color: var(--wood-2); text-decoration: underline; font-weight: 700; font-size: 13px; margin-top: 6px; padding: 2px; }
@@ -172,7 +178,7 @@ table.brk td.n { text-align: center; white-space: nowrap; font-weight: 900; }
 <div id="qcard" class="hidden" role="dialog" aria-label="Gate question">
   <div class="qhead">
     <span id="qnum">GATE 1</span>
-    <span class="qprompt">Is the marked information <b>enough to prove</b> that <b>ABCD is a parallelogram</b>?</span>
+    <span class="qprompt" id="qprompt">Is the marked information <b>enough to prove</b> that <b>ABCD is a parallelogram</b>?</span>
   </div>
   <canvas id="qdiag" width="400" height="250"></canvas>
   <div class="scale-note">Diagrams are not drawn to scale. Trust the marks, not the picture!</div>
@@ -206,7 +212,7 @@ table.brk td.n { text-align: center; white-space: nowrap; font-weight: 900; }
             <li><b style="color:var(--yes)">LEFT arch: PARALLELOGRAM!</b> The marks are enough to <i>prove</i> it.</li>
             <li><b style="color:var(--no)">RIGHT arch: NOT ENOUGH INFO.</b> It <i>might</i> be one, but it isn't proven.</li>
           </ul>
-          <kbd>←</kbd>/<kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> pick an arch (or switch lanes) · <kbd>↑</kbd>/<kbd>Space</kbd> jump · <kbd>↓</kbd> slide · <kbd>P</kbd> pause. On a phone or tablet, swipe or tap the buttons. Between gates, <b>jump</b> rubble and logs, <b>slide</b> under vines and rulers, and <b>dodge</b> pillars and flying protractors. Wrong arches cost a ❤️. Lose them all and the Not‑a‑grams catch you!
+          <kbd>←</kbd>/<kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> pick an arch (or switch lanes) · <kbd>↑</kbd>/<kbd>Space</kbd> jump · <kbd>↓</kbd> slide · <kbd>P</kbd> pause. On a phone or tablet, swipe or tap the buttons. Between gates, <b>jump</b> rubble and logs, <b>slide</b> under vines and rulers, and <b>dodge</b> pillars and flying protractors. Wrong arches and obstacle hits cost a ❤️. Some gates ask <b>what's missing</b>: pick the arch with the fact that would complete the proof. Lose all your hearts and the Not‑a‑grams catch you!
         </div>
         <div class="field"><label class="lbl" for="nameIn">Runner name (shown on your results)</label><input type="text" id="nameIn" maxlength="30" placeholder="First & last name" autocomplete="off"></div>
         <div class="field"><span class="lbl" style="font-weight:900;font-size:14px">Mode</span><div class="seg-ctl" id="set-mode" aria-label="Mode"></div></div>
@@ -490,6 +496,62 @@ const TEMPLATES = [
 ];
 const YES_T = TEMPLATES.filter(t => t.ok), NO_T = TEMPLATES.filter(t => !t.ok);
 
+/* "What's missing?" gates: partial marks + two candidate facts; exactly one completes a proof. */
+const MISSING_T = [
+  { id: 'm-par', cat: 'What\'s missing? Given one pair of parallel sides', make() {
+    const good = chance(.5)
+      ? { marks: [tk(0, 1, 1), tk(3, 2, 1)], txt: '[AB] ≅ [DC]', why: 'then the same pair, [AB] and [DC], is both parallel and congruent.' }
+      : { marks: [par(0, 3, 2), par(1, 2, 2)], txt: '[AD] ∥ [BC]', why: 'then both pairs of opposite sides are parallel.' };
+    const bad = { txt: '[AD] ≅ [BC]', why: '[AB] ∥ [DC] plus a congruent <i>other</i> pair could be an <b>isosceles trapezoid</b>.' };
+    return { sh: paraShape(), marks: [par(0, 1, 1), par(3, 2, 1)], given: '[AB] ∥ [DC]', good, bad }; } },
+  { id: 'm-cong', cat: 'What\'s missing? Given one pair of congruent sides', make() {
+    const good = chance(.5)
+      ? { marks: [tk(0, 3, 2), tk(1, 2, 2)], txt: '[AD] ≅ [BC]', why: 'then both pairs of opposite sides are congruent.' }
+      : { marks: [par(0, 1, 1), par(3, 2, 1)], txt: '[AB] ∥ [DC]', why: 'then the same pair, [AB] and [DC], is both congruent and parallel.' };
+    const bad = { txt: '[AD] ∥ [BC]', why: 'a congruent pair plus a parallel <i>other</i> pair could be an <b>isosceles trapezoid</b> (with bases [AD] and [BC]).' };
+    return { sh: paraShape(), marks: [tk(0, 1, 1), tk(3, 2, 1)], given: '[AB] ≅ [DC]', good, bad }; } },
+  { id: 'm-ang', cat: 'What\'s missing? Given one pair of opposite angles', make() {
+    const good = { marks: [arcM(1, 2), arcM(3, 2)], txt: '∠B ≅ ∠D', why: 'then both pairs of opposite angles are congruent.' };
+    const bad = pick([
+      { txt: '[AB] ≅ [BC]', why: 'a <b>kite</b> with BA = BC and DA = DC has ∠A ≅ ∠C and is not a parallelogram.' },
+      { txt: '[BD] bisects ∠B', why: 'a <b>kite</b> with diagonal [BD] as its line of symmetry has ∠A ≅ ∠C and is not a parallelogram.' },
+    ]);
+    return { sh: paraShape(), marks: [arcM(0, 1), arcM(2, 1)], given: '∠A ≅ ∠C', good, bad }; } },
+  { id: 'm-diag', cat: 'What\'s missing? Given one diagonal bisected', make() {
+    const good = { marks: [dtk(1, 2), dtk(3, 2)], txt: '[BE] ≅ [ED]', why: 'then E is the midpoint of both diagonals, so the diagonals bisect each other.' };
+    const bad = pick([
+      { txt: '[AC] ⊥ [BD]', why: 'in a <b>kite</b>, [BD] can be the perpendicular bisector of [AC] without [BD] being bisected.' },
+      { txt: '[AC] ≅ [BD]', why: 'congruent diagonals still don\'t make E the midpoint of [BD].' },
+    ]);
+    return { sh: paraShape(), marks: [DIAG, dtk(0, 1), dtk(2, 1)], given: '[AE] ≅ [EC]', good, bad }; } },
+  { id: 'm-supp', cat: 'What\'s missing? Given two supplementary consecutive angles', make() {
+    const sh = paraShape(), a = interior(sh.pts, 0), b = interior(sh.pts, 1);
+    const good = chance(.5)
+      ? { marks: [angM(3)], txt: `m∠D = ${b}°`, why: `then ∠A is supplementary to <b>both</b> consecutive angles, ∠B and ∠D.` }
+      : { marks: [tk(0, 3, 1), tk(1, 2, 1)], txt: '[AD] ≅ [BC]', why: `∠A + ∠B = 180° already makes [AD] ∥ [BC], so that same pair would be both parallel and congruent.` };
+    const bad = pick([
+      { txt: '[AB] ≅ [DC]', why: `∠A + ∠B = 180° only gives [AD] ∥ [BC]. Adding the <i>other</i> pair congruent could be an <b>isosceles trapezoid</b>.` },
+      { txt: `m∠C = ${b}°`, why: `∠B + ∠C = ${2 * b}°, so ∠B isn't supplementary to ∠C. With ∠A + ∠B = 180° only, this could be a <b>trapezoid</b>.` },
+    ].filter(o => !(o.txt.startsWith('m∠C') && b === 90)));
+    return { sh, marks: [angM(0), angM(1)], given: `m∠A = ${a}°, m∠B = ${b}°`, good, bad }; } },
+  { id: 'm-isotrap', cat: 'What\'s missing? Given isosceles-trapezoid marks', make() {
+    const good = chance(.5)
+      ? { marks: [par(0, 3, 2), par(1, 2, 2)], txt: '[AD] ∥ [BC]', why: 'then both pairs of opposite sides are parallel.' }
+      : { marks: [tk(0, 1, 2), tk(3, 2, 2)], txt: '[AB] ≅ [DC]', why: 'then [AB] and [DC] are both parallel and congruent.' };
+    const bad = { txt: '[AC] ≅ [BD]', why: 'an <b>isosceles trapezoid</b> already has congruent diagonals, so this adds nothing.' };
+    return { sh: paraShape(), marks: [par(0, 1, 1), par(3, 2, 1), tk(0, 3, 1), tk(1, 2, 1)], given: '[AB] ∥ [DC] and [AD] ≅ [BC]', good, bad }; } },
+];
+function makeMissing(t) {
+  const r = t.make(), side = chance(.5) ? -1 : 1;
+  return Object.assign(r, {
+    tpl: t, id: t.id, cat: t.cat, kind: 'missing', ok: null, answer: side,
+    left: side === -1 ? r.good : r.bad, right: side === -1 ? r.bad : r.good,
+    fullMarks: r.marks.concat(r.good.marks),
+    short: `${r.good.txt} works: ${r.good.why}`,
+    why: `<b>${r.good.txt}</b> completes the proof: ${r.good.why}<br><b>${r.bad.txt}</b> is not enough: ${r.bad.why}`,
+  });
+}
+
 function variantFor(t) {
   const av = t.vars.map((l, i) => [l, i]).filter(([l]) => l <= PLEVEL);
   if (PLEVEL === 3 && av.length > 1 && chance(.65)) { const mx = Math.max(...av.map(a => a[0])); return pick(av.filter(a => a[0] === mx))[1]; }
@@ -497,15 +559,15 @@ function variantFor(t) {
 }
 // Returns a function that makes the next question; bags make sure every idea comes up before any repeats.
 function makeGen() {
-  const bags = { yes: [], no: [] }; let last = null;
-  const pool = k => (k === 'yes' ? YES_T : NO_T).filter(t => Math.min(...t.vars) <= PLEVEL);
-  return isNo => {
-    const k = isNo ? 'no' : 'yes';
+  const bags = { yes: [], no: [], missing: [] }; let last = null;
+  const pool = k => k === 'missing' ? MISSING_T : (k === 'yes' ? YES_T : NO_T).filter(t => Math.min(...t.vars) <= PLEVEL);
+  return k => {
+    if (k === 'missing') { if (!bags.missing.length) bags.missing = shuffle(MISSING_T.slice()); ROTK = PLEVEL === 3 ? 2.2 : PLEVEL === 1 ? .6 : 1; return makeMissing(bags.missing.pop()); }
     if (!bags[k].length) { let p = pool(k); if (PLEVEL === 3) p = p.concat(p.filter(t => Math.min(...t.vars) >= 2)); bags[k] = shuffle(p.slice()); }
     let i = bags[k].length - 1; if (bags[k][i] === last && i > 0) i--;
     const t = bags[k].splice(i, 1)[0]; last = t;
     ROTK = PLEVEL === 3 ? 2.2 : PLEVEL === 1 ? .6 : 1;
-    return Object.assign({ tpl: t, ok: t.ok, cat: t.cat, id: t.id }, t.make(variantFor(t)));
+    return Object.assign({ tpl: t, ok: t.ok, cat: t.cat, id: t.id, kind: 'yn', answer: t.ok ? -1 : 1 }, t.make(variantFor(t)));
   };
 }
 
@@ -665,20 +727,22 @@ const SETTINGS = [
   { key: 'gates', el: 'set-gates', opts: [['10', '10'], ['16', '16'], ['24', '24']] },
   { key: 'plevel', label: 'Problem difficulty', opts: [['1', 'Basic', 'marks only'], ['2', 'Standard', 'marks + measures'], ['3', 'Challenge', 'tricky cases, tilted']] },
   { key: 'nonex', label: 'Non‑examples', opts: [['0.1', 'Few', '~10%'], ['0.25', 'Some', '~25%'], ['0.5', 'Half', '~50%']] },
+  { key: 'missing', label: '"What\'s missing?" gates', opts: [['0', 'Off'], ['0.2', 'Some', '~20% of gates'], ['0.4', 'Lots', '~40% of gates']] },
   { key: 'speed', label: 'Runner speed', opts: [['slow', 'Slow'], ['normal', 'Normal'], ['fast', 'Fast'], ['turbo', 'Turbo']] },
   { key: 'answer', label: 'Time to answer', opts: [['relaxed', 'Relaxed', '22 s'], ['normal', 'Normal', '14 s'], ['quick', 'Quick', '9 s'], ['lightning', 'Lightning', '6 s']] },
   { key: 'freq', label: 'Gates come', opts: [['relaxed', 'Now and then', '~7 s apart'], ['normal', 'Often', '~4 s apart'], ['frequent', 'Back to back', '~2.5 s apart']] },
   { key: 'obst', label: 'Obstacles', opts: [['0', 'Off'], ['1', 'Light'], ['2', 'Normal'], ['3', 'Heavy']] },
   { key: 'lives', label: 'Lives', opts: [['3', '3'], ['5', '5'], ['0', 'Unlimited', 'practice']] },
+  { key: 'ohurt', label: 'Obstacle hits', opts: [['1', 'Cost a heart'], ['0', 'Cost points only']] },
 ];
-const DEFAULTS = { mode: 'course', gates: '16', plevel: '2', nonex: '0.25', speed: 'normal', answer: 'normal', freq: 'normal', obst: '2', lives: '3' };
+const DEFAULTS = { mode: 'course', gates: '16', plevel: '2', nonex: '0.5', missing: '0.2', speed: 'normal', answer: 'normal', freq: 'normal', obst: '2', lives: '5', ohurt: '1' };
 const PRESETS = {
-  study: { plevel: '1', speed: 'slow', answer: 'relaxed', freq: 'relaxed', obst: '0', lives: '0' },
-  run: { plevel: '2', speed: 'normal', answer: 'normal', freq: 'normal', obst: '2', lives: '3' },
-  sprint: { plevel: '3', speed: 'fast', answer: 'quick', freq: 'frequent', obst: '3', lives: '3' },
+  study: { plevel: '1', missing: '0', speed: 'slow', answer: 'relaxed', freq: 'relaxed', obst: '0', lives: '0' },
+  run: { plevel: '2', missing: '0.2', speed: 'normal', answer: 'normal', freq: 'normal', obst: '2', lives: '5' },
+  sprint: { plevel: '3', missing: '0.4', speed: 'fast', answer: 'quick', freq: 'frequent', obst: '3', lives: '5' },
 };
-const CFG = (() => { const c = { ...DEFAULTS }; try { Object.assign(c, JSON.parse(localStorage.getItem('pgramRunCfg') || '{}')); } catch (e) { /* storage blocked */ } return c; })();
-function saveCfg() { try { localStorage.setItem('pgramRunCfg', JSON.stringify(CFG)); } catch (e) { /* storage blocked */ } }
+const CFG = (() => { const c = { ...DEFAULTS }; try { Object.assign(c, JSON.parse(localStorage.getItem('pgramRunCfg2') || '{}')); } catch (e) { /* storage blocked */ } return c; })();
+function saveCfg() { try { localStorage.setItem('pgramRunCfg2', JSON.stringify(CFG)); } catch (e) { /* storage blocked */ } }
 function optLabel(key) { const st = SETTINGS.find(x => x.key === key); return st.opts.find(o => o[0] === CFG[key])[1]; }
 const S = { mode: 'title', t: 0, dist: 0, speed: 6, px: 0, lane: 0, py: 0, vy: 0, slideT: 0, objs: [], chase: 0, flash: null, paused: false, stumbleT: 0 };
 
@@ -698,14 +762,17 @@ function newGame() {
   PLEVEL = +CFG.plevel;
   const endless = CFG.mode === 'endless', lives = +CFG.lives, gen = makeGen();
   let qList = [];
-  if (!endless) { const n = +CFG.gates, k = Math.round(n * +CFG.nonex); qList = shuffle([...Array(n)].map((_, i) => i < k)).map(f => gen(f)); }
+  if (!endless) {
+    const n = +CFG.gates, m = Math.round(n * +CFG.missing), k = Math.round((n - m) * +CFG.nonex);
+    qList = shuffle([...Array(n)].map((_, i) => i < m ? 'missing' : i < m + k ? 'no' : 'yes')).map(gen);
+  }
   Object.assign(S, {
-    mode: 'play', endless, gen, nonex: +CFG.nonex, practice: lives === 0, maxLives: lives || 3, lives: lives || 3, name: $('nameIn').value.trim(),
+    mode: 'play', endless, gen, nonex: +CFG.nonex, pMissing: +CFG.missing, ohurt: CFG.ohurt === '1', invuln: 0, practice: lives === 0, maxLives: lives || 3, lives: lives || 3, name: $('nameIn').value.trim(),
     qList, qi: 0, score: 0, coins: 0, dist: 0, speed: SPEEDS[CFG.speed], answerT: ANSWERS[CFG.answer], answerT0: ANSWERS[CFG.answer],
     gap: GAPS[CFG.freq], obst: +CFG.obst, chosen: 0,
     streak: 0, bestStreak: 0, results: [], px: 0, lane: 0, py: 0, vy: 0, slideT: 0, objs: [], gate: null,
     chase: 0, flash: null, paused: false, stumbleT: 0, rush: false, ending: 0, hits: 0, startT: performance.now(),
-    cfgText: `${endless ? '♾️ Endless' : '🏁 Course'} · Problems: ${optLabel('plevel')} · Non‑examples: ${optLabel('nonex')} · Speed: ${optLabel('speed')} · Answer time: ${optLabel('answer')} · Obstacles: ${optLabel('obst')} · Lives: ${optLabel('lives')}`,
+    cfgText: `${endless ? '♾️ Endless' : '🏁 Course'} · Problems: ${optLabel('plevel')} · Non‑examples: ${optLabel('nonex')} · What's missing: ${optLabel('missing')} · Speed: ${optLabel('speed')} · Answer time: ${optLabel('answer')} · Obstacles: ${optLabel('obst')} · Lives: ${optLabel('lives')} · Obstacle hits: ${optLabel('ohurt')}`,
   });
   startRun(true);
   ['titleScr', 'resScr', 'guideScr', 'fbScr', 'pauseScr'].forEach(id => $(id).classList.add('hidden'));
@@ -754,11 +821,11 @@ function spawnPattern(t, allLaneOnly) {
 }
 
 function startQuestion() {
-  if (S.endless && S.qi >= S.qList.length) S.qList.push(S.gen(Math.random() < S.nonex));
+  if (S.endless && S.qi >= S.qList.length) S.qList.push(S.gen(Math.random() < S.pMissing ? 'missing' : Math.random() < S.nonex ? 'no' : 'yes'));
   S.phase = 'question'; S.cur = S.qList[S.qi]; S.lane = 0; S.chosen = 0; S.rush = false; S.hintUsed = false;
   S.gate = { z: PZ + S.speed * S.answerT }; S.gateTotal = S.gate.z - PZ;
-  // jump/slide obstacles while thinking (lane doesn't matter, so they never pick an arch for you)
-  if (S.obst >= 2) { const step = S.obst >= 3 ? 2.3 : 3.4; for (let t = 2.2; t < S.answerT - 2.6; t += step * rand(.9, 1.2)) spawnPattern(t, true); }
+  // the road stays clear of obstacles while a question is up
+  S.objs = S.objs.filter(o => o.kind === 'coin');
   showCard();
 }
 
@@ -772,7 +839,7 @@ function choose(l) {
 
 function resolveGate() {
   const q = S.cur, ans = S.lane;
-  const correct = (ans === -1 && q.ok) || (ans === 1 && !q.ok);
+  const correct = ans === q.answer;
   S.results.push({ q, ans, correct, hint: S.hintUsed });
   hideCard(); S.qi++; S.gate = null; S.rush = false;
   if (correct) {
@@ -780,7 +847,7 @@ function resolveGate() {
     const pts = Math.round((100 + 25 * Math.min(S.streak - 1, 8)) * (S.hintUsed ? .5 : 1));
     S.score += pts; S.flash = { col: '56,210,122', t: .5 };
     sfx.good();
-    toast(`<b class="big">✔ ${q.ok ? 'PARALLELOGRAM!' : 'NOT ENOUGH INFO!'} +${pts}</b>${fmt(q.short)}${S.streak >= 3 ? ` · 🔥 ${S.streak} in a row!` : ''}`, 3200, true);
+    toast(`<b class="big">✔ ${q.kind === 'missing' ? 'THAT\'S THE MISSING PIECE!' : q.ok ? 'PARALLELOGRAM!' : 'NOT ENOUGH INFO!'} +${pts}</b>${fmt(q.short)}${S.streak >= 3 ? ` · 🔥 ${S.streak} in a row!` : ''}`, 3200, true);
     S.speed += S.endless ? .25 : .15;
     if (S.endless) S.answerT = Math.max(5, S.answerT0 * .6, S.answerT * .98);
     updateHud();
@@ -794,8 +861,15 @@ function resolveGate() {
 }
 
 function stumble(o) {
-  o.hit = true; S.hits++; S.score = Math.max(0, S.score - 25); S.stumbleT = .6; S.chase = Math.max(S.chase, 3.5);
-  S.flash = { col: '220,60,40', t: .35 }; sfx.hit(); updateHud();
+  if (S.invuln > 0 || S.phase === 'dead') return;
+  o.hit = true; S.hits++; S.score = Math.max(0, S.score - 25); S.stumbleT = .6; S.chase = Math.max(S.chase, 4);
+  S.flash = { col: '220,60,40', t: .45 }; sfx.hit();
+  if (S.ohurt && !S.practice) {
+    S.lives--; S.invuln = 1.5;
+    if (S.lives <= 0) { S.phase = 'dead'; S.ending = 1.2; S.objs = []; hideCard(); }
+    else toast(`<b class="big">OUCH! −1 ❤️</b>${S.lives} ${S.lives === 1 ? 'life' : 'lives'} left. Jump ▲, slide ▼, or dodge ◀ ▶!`, 1800, false);
+  }
+  updateHud();
 }
 
 function update(dt) {
@@ -808,6 +882,7 @@ function update(dt) {
   if (S.py > 0 || S.vy > 0) { S.vy -= 24 * dt; S.py += S.vy * dt; if (S.py <= 0) { S.py = 0; S.vy = 0; } }
   if (S.slideT > 0) S.slideT -= dt;
   if (S.stumbleT > 0) S.stumbleT -= dt;
+  if (S.invuln > 0) S.invuln -= dt;
   if (S.chase > 0) S.chase -= dt;
   if (S.flash) { S.flash.t -= dt; if (S.flash.t <= 0) S.flash = null; }
 
@@ -840,6 +915,8 @@ function update(dt) {
     if (S.gate.z <= PZ) resolveGate();
   } else if (S.phase === 'end') {
     S.ending -= dt; if (S.ending <= 0) finish('won');
+  } else if (S.phase === 'dead') {
+    S.ending -= dt; if (S.ending <= 0) finish('caught');
   }
 }
 
@@ -1064,8 +1141,9 @@ function drawGate(z) {
     // glow particles
     for (let i = 0; i < 6; i++) { const px = L[0] + rr * 2 * hash(i + cx * 10), py = L[1] - (((S.t * 40 + i * 37) % 100) / 100) * (L[1] - T[1]); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.beginPath(); ctx.arc(px, py, Math.max(1, .05 * s), 0, 7); ctx.fill(); }
   };
-  open(-LX, '#b9ffd5', '#1f9d55');
-  open(LX, '#ffd6b0', '#d9622b');
+  const miss = S.cur && S.cur.kind === 'missing';
+  open(-LX, miss ? '#cfe4ff' : '#b9ffd5', miss ? '#2f6fb5' : '#1f9d55');
+  open(LX, miss ? '#ead7ff' : '#ffd6b0', miss ? '#7d4bb3' : '#d9622b');
   // signs
   const sign = (cx, bg, text1, text2) => {
     const a = P(cx - 1.38, 4.85), b = P(cx + 1.38, 3.55);
@@ -1080,8 +1158,8 @@ function drawGate(z) {
     ctx.font = `700 ${fs * .55}px Nunito, sans-serif`;
     ctx.fillText(text2, (a[0] + b[0]) / 2, a[1] + (b[1] - a[1]) * .76);
   };
-  sign(-LX, '#1f9d55', 'PARALLELOGRAM ✓', '◀ it is proven');
-  sign(LX, '#d9622b', 'NOT ENOUGH INFO ✗', 'can\'t be sure ▶');
+  if (miss) { sign(-LX, '#2f6fb5', 'OPTION A', '◀ ' + plain(S.cur.left.txt)); sign(LX, '#7d4bb3', 'OPTION B', plain(S.cur.right.txt) + ' ▶'); }
+  else { sign(-LX, '#1f9d55', 'PARALLELOGRAM ✓', '◀ it is proven'); sign(LX, '#d9622b', 'NOT ENOUGH INFO ✗', 'can\'t be sure ▶'); }
   // center emblem
   const e = P(0, 5.2), es = .36 * s;
   ctx.fillStyle = '#f2c14e'; ctx.strokeStyle = '#5b3a1e'; ctx.lineWidth = Math.max(1, .06 * s);
@@ -1092,6 +1170,7 @@ function drawGate(z) {
 
 /* ---------- Professor Protractor (back view, running) ---------- */
 function drawRunner() {
+  if (S.invuln > 0 && S.mode === 'play' && Math.floor(S.invuln * 10) % 2) return;
   const ground = proj(S.px, 0, PZ), feet = proj(S.px, S.py, PZ), s = F / PZ;
   const u = s * 1.3 / 18;
   const x = feet[0], y = feet[1];
@@ -1228,7 +1307,7 @@ function render() {
       ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(a) * r1, HZ + Math.sin(a) * r1 * .7); ctx.lineTo(W / 2 + Math.cos(a) * r1 * 1.4, HZ + Math.sin(a) * r1 * .98); ctx.stroke(); }
   }
   const over = S.mode === 'over';
-  drawChasers(over ? 1 : S.chase / 2, over || S.lives <= 1);
+  drawChasers(over || S.phase === 'dead' ? 1 : S.chase / 2, over || S.phase === 'dead' || S.lives <= 1);
   if (S.flash) { ctx.fillStyle = `rgba(${S.flash.col},${clamp(S.flash.t, 0, .5) * .6})`; ctx.fillRect(0, 0, W, H); }
 }
 
@@ -1263,6 +1342,12 @@ function showCard() {
   $('hintText').classList.add('hidden'); $('hintText').innerHTML = '<span style="font-weight:400">Given:</span> ' + fmt(q.given);
   $('hintBtn').classList.remove('hidden');
   ['btnYes', 'btnNo'].forEach(id => $(id).classList.remove('picked', 'dim'));
+  const miss = q.kind === 'missing';
+  $('qprompt').innerHTML = miss ? '<b>What\'s missing?</b> Which <b>additional information</b> would prove <b>ABCD is a parallelogram</b>?'
+    : 'Is the marked information <b>enough to prove</b> that <b>ABCD is a parallelogram</b>?';
+  $('btnYes').className = 'choice ' + (miss ? 'opt' : 'yes'); $('btnNo').className = 'choice ' + (miss ? 'opt b' : 'no');
+  $('btnYes').innerHTML = miss ? `◀ A: ${fmt(q.left.txt)}<small>Left arch · ← or A</small>` : '◀ PARALLELOGRAM!<small>Left arch · ← or Y</small>';
+  $('btnNo').innerHTML = miss ? `B: ${fmt(q.right.txt)} ▶<small>Right arch · → or D</small>` : 'NOT ENOUGH INFO ▶<small>Right arch · → or N</small>';
   $('timerFill').style.transform = 'scaleX(1)';
   $('qcard').classList.remove('hidden');
   $('toast').classList.add('hidden');
@@ -1276,15 +1361,20 @@ function useHint() {
 function showFeedback(q, ans) {
   S.paused = true;
   $('fbTitle').textContent = ans === 0 ? 'Bonk! You hit the pillar!' : 'Not quite, Professor!';
-  const right = q.ok ? '<span style="color:var(--yes)">PARALLELOGRAM (it is proven)</span>' : '<span style="color:var(--no)">NOT ENOUGH INFO</span>';
-  $('fbAnswer').innerHTML = (ans === 0 ? 'You didn\'t pick an arch in time. ' : '') + 'The correct arch was: ' + right;
-  drawDiagram($('fbDiag'), q);
-  $('fbWhy').innerHTML = fmt(q.why); $('fbWhy').className = 'fbbox' + (q.ok ? ' good' : '');
+  const right = answerText(q);
+  $('fbAnswer').innerHTML = (ans === 0 ? 'You didn\'t pick an arch in time. ' : '') + 'The correct arch was: ' + right + (q.kind === 'missing' ? '<br><span style="font-weight:400">The diagram below includes the missing piece.</span>' : '');
+  drawDiagram($('fbDiag'), q.kind === 'missing' ? { sh: q.sh, marks: q.fullMarks } : q);
+  $('fbWhy').innerHTML = fmt(q.why); $('fbWhy').className = 'fbbox' + (q.ok !== false ? ' good' : '');
   $('fbGiven').innerHTML = fmt(q.given);
   const dead = !S.practice && S.lives <= 0, done = !S.endless && S.qi >= S.qList.length;
   $('fbBtn').textContent = dead ? 'See Results…' : done ? 'Finish ▶' : 'Keep Running ▶';
   $('fbScr').classList.remove('hidden');
   setTimeout(() => $('fbBtn').focus(), 50);
+}
+function answerText(q, side = q.answer) {
+  if (q.kind === 'missing') { const o = side === -1 ? q.left : side === 1 ? q.right : null; return o ? `<span style="color:${side === -1 ? 'var(--opt)' : 'var(--opt-b)'}">Option ${side === -1 ? 'A' : 'B'}: ${fmt(o.txt)}</span>` : 'no arch (hit the pillar)'; }
+  if (side === 0) return 'no arch (hit the pillar)';
+  return side === -1 ? '<span style="color:var(--yes)">PARALLELOGRAM (it is proven)</span>' : '<span style="color:var(--no)">NOT ENOUGH INFO</span>';
 }
 function closeFeedback() {
   $('fbScr').classList.add('hidden'); S.paused = false;
@@ -1312,14 +1402,16 @@ function finish(how) {
   const pct = R.length ? Math.round(nC / R.length * 100) : 0;
   $('resStats').innerHTML = [
     [`${nC}/${R.length}`, 'gates correct'], [pct + '%', 'accuracy'], [S.score, 'score'], [S.bestStreak, 'best streak'],
-    [S.coins, 'coins'], [S.endless ? S.qi : `${S.qi}/${S.qList.length}`, 'gates reached'], [mins + ' min', 'run time'],
+    [S.coins, 'coins'], [S.hits, 'obstacles hit'], [S.endless ? S.qi : `${S.qi}/${S.qList.length}`, 'gates reached'], [mins + ' min', 'run time'],
     ...(S.endless ? [[best, 'best endless score']] : []),
   ].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('');
   // breakdown by idea
   const rows = new Map();
   for (const r of R) { const k = r.q.cat; if (!rows.has(k)) rows.set(k, { ok: r.q.ok, c: 0, n: 0 }); const e = rows.get(k); e.n++; if (r.correct) e.c++; }
-  const sorted = [...rows.entries()].sort((a, b) => (b[1].ok - a[1].ok));
-  $('resTable').innerHTML = sorted.map(([k, e]) => `<tr><td>${k}</td><td><span class="tag ${e.ok ? 'yes' : 'no'}">${e.ok ? 'Parallelogram' : 'Not enough'}</span></td><td class="n">${e.c === e.n ? '✅' : e.c === 0 ? '❌' : '⚠️'} ${e.c}/${e.n}</td></tr>`).join('') || '<tr><td colspan="3">No gates reached.</td></tr>';
+  const ord = e => e.ok === true ? 0 : e.ok === false ? 1 : 2;
+  const sorted = [...rows.entries()].sort((a, b) => ord(a[1]) - ord(b[1]));
+  const tag = e => e.ok === true ? '<span class="tag yes">Parallelogram</span>' : e.ok === false ? '<span class="tag no">Not enough</span>' : '<span class="tag miss">What\'s missing?</span>';
+  $('resTable').innerHTML = sorted.map(([k, e]) => `<tr><td>${k}</td><td>${tag(e)}</td><td class="n">${e.c === e.n ? '✅' : e.c === 0 ? '❌' : '⚠️'} ${e.c}/${e.n}</td></tr>`).join('') || '<tr><td colspan="3">No gates reached.</td></tr>';
   const missed = R.filter(r => !r.correct);
   $('missHead').textContent = missed.length ? `Review your missed gates (${missed.length})` : 'No missed gates. Perfect run! 🎉';
   const ml = $('missList'); ml.innerHTML = '';
@@ -1327,8 +1419,8 @@ function finish(how) {
     const d = document.createElement('div'); d.className = 'miss';
     const c = document.createElement('canvas'); d.appendChild(c);
     const tx = document.createElement('div');
-    tx.innerHTML = `<b>Given:</b> ${fmt(r.q.given)}<br><b>You chose:</b> ${r.ans === -1 ? 'Parallelogram' : r.ans === 1 ? 'Not enough info' : 'no arch (hit the pillar)'} · <b>Answer:</b> ${r.q.ok ? 'Parallelogram' : 'Not enough info'}<div style="margin-top:4px">${fmt(r.q.why)}</div>`;
-    d.appendChild(tx); ml.appendChild(d); drawDiagram(c, r.q);
+    tx.innerHTML = `<b>Given:</b> ${fmt(r.q.given)}<br><b>You chose:</b> ${answerText(r.q, r.ans)} · <b>Answer:</b> ${answerText(r.q)}<div style="margin-top:4px">${fmt(r.q.why)}</div>`;
+    d.appendChild(tx); ml.appendChild(d); drawDiagram(c, r.q.kind === 'missing' ? { sh: r.q.sh, marks: r.q.fullMarks } : r.q);
   }
   $('resScr').classList.remove('hidden'); $('resScr').scrollTop = 0;
 }
@@ -1444,8 +1536,8 @@ addEventListener('keydown', e => {
   if (S.paused) return;
   const map = { arrowleft: 'left', a: 'left', arrowright: 'right', d: 'right', arrowup: 'jump', w: 'jump', ' ': 'jump', arrowdown: 'slide', s: 'slide' };
   if (map[k]) { e.preventDefault(); act(map[k]); }
-  else if (k === 'y' && S.phase === 'question') choose(-1);
-  else if (k === 'n' && S.phase === 'question') choose(1);
+  else if (k === 'y' && S.phase === 'question' && S.cur.kind !== 'missing') choose(-1);
+  else if (k === 'n' && S.phase === 'question' && S.cur.kind !== 'missing') choose(1);
   else if (k === 'h') useHint();
 });
 // swipe
